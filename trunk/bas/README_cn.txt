@@ -15,12 +15,10 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨ÕýÈ·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
    on_read:   µ±¶Á²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª³É¹¦¶ÁÈ¡Êý¾Ý³¤¶È£»
    on_write:  µ±Ð´²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£»
    on_close:  µ±Á¬½Ó¹Ø±ÕÊ±±»µ÷ÓÃ£¬²ÎÊýÎª´íÎóÔ­Òò£¬Ö÷Òª°üÀ¨£º
-                  0,     boost::system::success, Ã»ÓÐ·¢Éú´íÎó£¬Õý³£¹Ø±Õ£»
-                  2,     boost::asio::error::eof, Á¬½Ó±»¶Ô¶Ë¸É¾»µÄ¹Ø±Õ£»
-                  10053, boost::asio::error::connection_aborted£»
-                  10054, boost::asio::error::connection_reset£»
-                  10055, boost::asio::error::no_buffer_space£»
-                  10060, boost::asio::error::timed_out£»
+                  0, ²Ù×÷³É¹¦Íê³É£¬Á¬½ÓÕý³£¹Ø±Õ£»
+                  boost::asio::error::eof, ²Ù×÷³É¹¦Íê³É£¬Á¬½Ó±»¶Ô¶Ë¸É¾»µÄ¹Ø±Õ£»
+                  boost::asio::error::timed_out£¬²Ù×÷³¬Ê±Î´Íê³É£»
+                  ÆäËûÀàÐÍµÄI/O´íÎóÇë²Î¼û<boost/asio/error.hpp>µÄ¶¨Òå£»
    on_parent: ´Ó¸¸Á¬½Ó½ÓÊÕµ½ÊÂ¼þÊ±±»µ÷ÓÃ£¬²ÎÊýÎªÊÂ¼þÄÚÈÝ£»
    on_child:  ´Ó×ÓÁ¬½Ó½ÓÊÕµ½ÊÂ¼þÊ±±»µ÷ÓÃ£¬²ÎÊýÎªÊÂ¼þÄÚÈÝ£»
 3¡¢ÐèÒªÖ÷¶¯¹Ø±ÕÁ¬½ÓÊ±£¬´ÓÉÏÊöÈÎÒâº¯ÊýÖÐµ÷ÓÃclose()¼´¿É¡£
