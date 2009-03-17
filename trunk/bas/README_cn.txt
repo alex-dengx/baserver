@@ -8,23 +8,25 @@ bas目前实现了以下功能：
 5、提供echo_server、echo_client、proxy_server、http_server(基于asio的http server示例)等示例供参考。
 
 二、bas简单说明
-bas代码中包含了详细的注解(英文，但不一定正确，请谅解)，几个示例程序演示了基本的用法，这里主要将用户需要处理的两个派生类简单说明如下：
-1、由service_handler派生的子类负责处理具体业务，由service_handler_pool派生的子类负责新建和重用service_handler子类实例；
-2、service_handler的6个纯虚方法需要由子类来重载：
-   on_open:   当连接建立成功后将首先被调用；
-   on_read:   当读操作正常完成后被调用，参数为成功读取数据长度；
-   on_write:  当写操作正常完成后被调用；
-   on_close:  当连接关闭时被调用，参数为错误原因，主要包括：
+bas代码中包含了详细的注解(英文，但不一定正确，请谅解)，几个示例程序演示了基本的用法，这里主要将两个模板参数的具体实现要求说明如下：
+1、由Work_Allocator类负责新建Work_Handler类实例，必须实现如下函数：
+   make_handler:  新建一个Work_Handler类实例；
+2、Work_Handler类负责执行业务逻辑，必须实现如下函数：
+   clear:     连接开始前被调用，目的是将所有内部变量清除为初始状态；
+   on_open:   当连接建立成功后将首先被调用，参数为负责I/O操作的service_handler对象；
+   on_read:   当读操作正常完成后被调用，参数为负责I/O操作的service_handler对象和成功读取数据长度；
+   on_write:  当写操作正常完成后被调用，参数为负责I/O操作的service_handler对象；
+   on_close:  当连接关闭时被调用，参数为负责I/O操作的service_handler对象和错误原因，错误原因主要包括：
                   0, 操作成功完成，连接正常关闭；
                   boost::asio::error::eof, 操作成功完成，连接被对端干净的关闭；
                   boost::asio::error::timed_out，操作超时未完成；
                   其他类型的I/O错误请参见<boost/asio/error.hpp>的定义；
-   on_parent: 从父连接接收到事件时被调用，参数为事件内容；
-   on_child:  从子连接接收到事件时被调用，参数为事件内容；
-3、需要主动关闭连接时，从上述任意函数中调用close()即可。
+   on_parent: 从父连接接收到事件时被调用，参数为负责I/O操作的service_handler对象和事件内容；
+   on_child:  从子连接接收到事件时被调用，参数为负责I/O操作的service_handler对象和事件内容；
+   在上述函数中，可通过调用service_handler对象的async_read_some、async_read、async_write等函数实现I/O操作，需要主动关闭连接时调用close即可。具体用法请参考示例；
 
 三、版本历史
-1、当前版本是0.20.0，为初始公开发布版本；
+1、当前版本是0.30.0，为初始公开发布版本；
 2、修正内容：无。
 
 四、其他说明
