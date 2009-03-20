@@ -1,16 +1,18 @@
 Ò»¡¢bas¼ò½é
-basÊÇ²ÉÓÃLeader/FollowerºÍHalf-Sync/Half-Async»ìºÏÄ£Ê½µÄ·þÎñÆ÷¿ò¼Ü£¬Ê¹ÓÃc++ÊµÏÖ£¬ÄÜ¹»´ó´ó¼ò»¯tcp serverµÄ¿ª·¢¹¤×÷¡£
+basÊÇ²ÉÓÃHalf-Sync/Half-AsyncÄ£Ê½µÄ·þÎñÆ÷¿ò¼Ü£¬Ê¹ÓÃc++ÊµÏÖ£¬ÄÜ¹»´ó´ó¼ò»¯tcp serverµÄ¿ª·¢¹¤×÷¡£
 basÄ¿Ç°ÊµÏÖÁËÒÔÏÂ¹¦ÄÜ£º
-1¡¢µ×²ã»ùÓÚboost¼°asioÊµÏÖ£¬¿çÔ½¶àÖÖ²Ù×÷ÏµÍ³Æ½Ì¨£»
-2¡¢I/O²¿·ÖÊ¹ÓÃ·Ç×èÈûÒì²½´¦Àí»úÖÆ¡¢²ÉÓÃLeader/FollowerÄ£Ê½ÊµÏÖ£¬ÒµÎñÂß¼­´¦Àí²¿·Ö²ÉÓÃÍ¬²½Ïß³Ì³ØÊµÏÖ£¬±ãÓÚ¸üºÃµÄÀûÓÃ¶à´¦ÀíÆ÷×ÊÔ´£»
+1¡¢µ×²ã»ùÓÚboost¼°asioÊµÏÖ£¬Ö§³Össl£¬¿çÔ½¶àÖÖ²Ù×÷ÏµÍ³Æ½Ì¨£»
+2¡¢I/O²¿·ÖÊ¹ÓÃ·Ç×èÈûÒì²½´¦Àí»úÖÆ¡¢ÒµÎñÂß¼­´¦Àí²¿·Ö²ÉÓÃÍ¬²½Ïß³Ì³ØÊµÏÖ£¬±ãÓÚ¸üºÃµÄÀûÓÃ¶à´¦ÀíÆ÷×ÊÔ´£»
 3¡¢·â×°´¦Àí¸÷ÖÖI/O²Ù×÷¼°×´Ì¬£¬²ÉÓÃÎÞ¹²ÏíËø/ÎÞÒýÓÃ¼ÆÊýÉè¼Æ£¬¿ØÖÆÂß¼­ÇåÎú¡¢¼òµ¥£¬ÓÃ»§Ó¦ÓÃ³ÌÐòÎÞÐë¹ØÐÄI/O²Ù×÷Ï¸½Ú£¬Ö»ÐèÒª¹ØÐÄÒµÎñÂß¼­µÄ¾ßÌåÊµÏÖ£»
 4¡¢Ìá¹©¶à¼¶tcp server·ÃÎÊ´¦Àí»úÖÆ£¬·Ç³£ÈÝÒ×ÊµÏÖ¸÷ÖÖ´úÀí·þÎñÆ÷£»
-5¡¢Ìá¹©echo_server¡¢echo_client¡¢proxy_server¡¢http_server(»ùÓÚasioµÄhttp serverÊ¾Àý)µÈÊ¾Àý¹©²Î¿¼¡£
+5¡¢Ìá¹©echo_server/echo_client¡¢ssl_server/ssl_client¡¢proxy_server¡¢http_server(»ùÓÚasioµÄhttp serverÊ¾Àý)µÈÊ¾Àý¹©²Î¿¼¡£
 
 ¶þ¡¢bas¼òµ¥ËµÃ÷
 bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨ÕýÈ·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµÄ¾ßÌåÊµÏÖÒªÇóËµÃ÷ÈçÏÂ£º
 1¡¢ÓÉWork_AllocatorÀà¸ºÔðÐÂ½¨Work_HandlerÀàÊµÀý£¬±ØÐëÊµÏÖÈçÏÂº¯Êý£º
-   make_handler:  ÐÂ½¨Ò»¸öWork_HandlerÀàÊµÀý£»
+   make_handler: ÐÂ½¨Ò»¸öWork_HandlerÀàÊµÀý£»
+   make_socket:  ÐÂ½¨Ò»¸ötcp::socket»òssl::streamÀàÊµÀý£¬¿´ÆðÀ´ÊÇ±È½ÏÆæ¹ÖµÄÉè¼Æ£¬²»¹ýÎªÁËÊÊÓÃÓÚ´´½¨ssl::streamÀà£¬±ØÐë´ÓWork_AllocatorÀàÖÐ»ñµÃcontext²ÎÊý£»
+
 2¡¢Work_HandlerÀà¸ºÔðÖ´ÐÐÒµÎñÂß¼­£¬±ØÐëÊµÏÖÈçÏÂº¯Êý£º
    clear:     Á¬½Ó¿ªÊ¼Ç°±»µ÷ÓÃ£¬Ä¿µÄÊÇ½«ËùÓÐÄÚ²¿±äÁ¿Çå³ýÎª³õÊ¼×´Ì¬£»
    on_open:   µ±Á¬½Ó½¨Á¢³É¹¦ºó½«Ê×ÏÈ±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏó£»
@@ -30,7 +32,7 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨ÕýÈ·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
 2¡¢ÐÞÕýÄÚÈÝ£ºÎÞ¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
-ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µÄ¡¢¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ·Ç³£¼òµ¥£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½½á¹¹ÃÀ¹Û¡¢Âß¼­ÇåÎúµÄÐèÒª£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñÓ¦¸Ã±È½Ï·±ÖØ£¬²»»áÏñecho_serverÈç´Ë¼òµ¥£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£
+ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ·Ç³£¼òµ¥£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½½á¹¹ÃÀ¹Û¡¢Âß¼­ÇåÎúµÄÐèÒª£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñÓ¦¸Ã±È½Ï·±ÖØ£¬²»»áÏñecho_serverÈç´Ë¼òµ¥£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£
 
 Îå¡¢°æÈ¨ÉùÃ÷
 ±¾Èí¼þµÄ°æÈ¨ÓÉXu Ye Jun(moore.xu@gmail.com)ËùÓÐ£¬»ùÓÚBoost Software License(Version 1.0)·¢²¼£¬¾ßÌå¹æÔò²Î¼ûÄÚ¸½µÄLICENSE_1_0.txtµÄÄÚÈÝ(¸´ÖÆ×Ôhttp://www.boost.org/LICENSE_1_0.txt)¡£
