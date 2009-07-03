@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+#include <ctime>
+
 #include "client_work.hpp"
 #include "client_work_allocator.hpp"
 
@@ -29,7 +31,8 @@ public:
   typedef bas::service_handler_pool<client_work, client_work_allocator> client_handler_pool_type;
   typedef bas::client<client_work, client_work_allocator> client_type;
 
-  explicit connections(const std::string& address, const std::string& port,
+  explicit connections(const std::string& address,
+      unsigned short port,
       std::size_t io_service_pool_size,
       std::size_t work_service_pool_size,
       std::size_t connection_number,
@@ -61,6 +64,11 @@ public:
     boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.\n";
     std::cout.flush();
+
+    boost::asio::io_service io_service;
+    boost::asio::deadline_timer timer(io_service);
+    timer.expires_from_now(boost::posix_time::seconds(3));
+    timer.wait();
   }
 
 private:

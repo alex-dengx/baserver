@@ -38,7 +38,7 @@ public:
   {
   }
   
-  void clear()
+  void on_clear(server_handler_type& handler)
   {
     request_.reset();
     request_parser_.reset();

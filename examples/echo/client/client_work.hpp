@@ -28,7 +28,7 @@ public:
   {
   }
 
-  void clear()
+  void on_clear(client_handler_type& handler)
   {
   }
 
@@ -39,7 +39,7 @@ public:
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)
   {
-    handler.close();
+ //   handler.close();
   }
 
   void on_write(client_handler_type& handler)

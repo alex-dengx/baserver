@@ -72,14 +72,13 @@ public:
   void resize(size_type length)
   {
     BOOST_ASSERT(length <= capacity());
-
     if (begin_offset_ + length <= capacity())
     {
       end_offset_ = begin_offset_ + length;
     }
     else
     {
-      std::memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
+      memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
       end_offset_ = length;
       begin_offset_ = 0;
     }
@@ -100,11 +99,19 @@ public:
   // Consume multiple bytes from the beginning of the buffer.
   void consume(size_type count)
   {
-    BOOST_ASSERT(begin_offset_ + count <= end_offset_);
-    
+    BOOST_ASSERT(count <= size());
     begin_offset_ += count;
     if (empty())
+    {
       clear();
+    }
+  }
+
+  // Produce multiple bytes to the ending of the buffer.
+  void produce(size_type count)
+  {
+    BOOST_ASSERT(count <= space());
+    end_offset_ += count;
   }
 
   // Remove consumed bytes from the beginning of the buffer.
@@ -112,9 +119,16 @@ public:
   {
     if (begin_offset_ != 0)
     {
-      std::memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
-      end_offset_ = size();
-      begin_offset_ = 0;
+      if (begin_offset_ != end_offset_)
+      {
+        memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
+        end_offset_ = size();
+        begin_offset_ = 0;
+      }
+      else
+      {
+        clear();
+      }
     }
   }
 

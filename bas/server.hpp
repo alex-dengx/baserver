@@ -38,7 +38,8 @@ public:
   typedef boost::shared_ptr<service_handler_pool_type> service_handler_pool_ptr;
 
   /// Construct the server to listen on the specified TCP address and port.
-  explicit server(const std::string& address, const std::string& port,
+  explicit server(const std::string& address,
+      unsigned short port,
       std::size_t io_service_pool_size,
       std::size_t work_service_pool_size,
       service_handler_pool_type* service_handler_pool)
@@ -47,16 +48,10 @@ public:
       work_service_pool_(work_service_pool_size),
       service_handler_pool_(service_handler_pool),
       acceptor_(accept_service_pool_.get_io_service()),
-      endpoint_(),
+      endpoint_(boost::asio::ip::address::from_string(address), port),
       started_(false)
   {
     BOOST_ASSERT(service_handler_pool != 0);
-
-    // Prepare host endpoint.
-    boost::asio::io_service io_service;
-    boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(address, port);
-    endpoint_ = *resolver.resolve(query);
   }
   
   /// Destruct the server object.

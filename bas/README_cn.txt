@@ -14,7 +14,7 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨×¼È·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
    make_socket:  ÐÂ½¨Ò»¸ötcp::socket»òssl::streamÀàÊµÀý£¬¿´ÆðÀ´ÊÇ±È½ÏÆæ¹ÖµÄÉè¼Æ£¬²»¹ýÎªÁËÊÊÓÃÓÚ´´½¨ssl::streamÀà£¬±ØÐë´ÓWork_AllocatorÀàÖÐ»ñµÃcontext²ÎÊý£»
 
 2¡¢Work_HandlerÀà¸ºÔðÖ´ÐÐÒµÎñÂß¼­£¬±ØÐëÊµÏÖÈçÏÂº¯Êý£º
-   clear:     Á¬½Ó¿ªÊ¼Ç°±»µ÷ÓÃ£¬Ä¿µÄÊÇ½«ËùÓÐÄÚ²¿±äÁ¿Çå³ýÎª³õÊ¼×´Ì¬£»
+   on_clear:  Á¬½Ó¿ªÊ¼Ç°±»µ÷ÓÃ£¬Ä¿µÄÊÇ½«ËùÓÐÄÚ²¿±äÁ¿Çå³ýÎª³õÊ¼×´Ì¬£»
    on_open:   µ±Á¬½Ó½¨Á¢³É¹¦ºó½«Ê×ÏÈ±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏó£»
    on_read:   µ±¶Á²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏóºÍ³É¹¦¶ÁÈ¡Êý¾Ý³¤¶È£»
    on_write:  µ±Ð´²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏó£»

@@ -29,7 +29,7 @@ public:
   typedef boost::asio::ip::tcp::socket socket_type;
 
   server_work_allocator(const std::string& address,
-      const std::string& port,
+      unsigned short port,
       client_handler_pool_type* client_work_pool)
     : client_(address,
           port,
