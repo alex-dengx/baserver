@@ -35,7 +35,7 @@ public:
   {
   }
 
-  void clear()
+  void on_clear(client_handler_type& handler)
   {
   }
 

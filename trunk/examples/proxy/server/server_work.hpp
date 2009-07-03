@@ -41,7 +41,7 @@ public:
       return *boost::any_cast<child_handler_type*>(handler.child_handler());
   }
   
-  void clear()
+  void on_clear(server_handler_type& handler)
   {
   }
 

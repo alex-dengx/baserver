@@ -36,19 +36,22 @@ public:
   typedef boost::shared_ptr<service_handler_pool_type> service_handler_pool_ptr;
 
   /// Construct the client object for connect to specified TCP address and port.
-  explicit client(const std::string& address, const std::string& port,
+  client(const std::string& address,
+      unsigned short port,
       service_handler_pool_type* service_handler_pool)
     : mutex_(),
       service_handler_pool_(service_handler_pool),
-      endpoint_iterator_()
+      endpoint_(boost::asio::ip::address::from_string(address), port)
   {
     BOOST_ASSERT(service_handler_pool != 0);
+  }
 
-    // Prepare endpoint_iterator for connect.
-    boost::asio::io_service io_service;
-    boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(address, port);
-    endpoint_iterator_ = resolver.resolve(query);
+  /// Construct the client object for connect to specified TCP address and port.
+  client(service_handler_pool_type* service_handler_pool)
+    : mutex_(),
+      service_handler_pool_(service_handler_pool)
+  {
+    BOOST_ASSERT(service_handler_pool != 0);
   }
 
   /// Destruct the client object.
@@ -59,14 +62,34 @@ public:
   }
 
   /// Make an connection with given io_service and work_service.
-  void connect(boost::asio::io_service& io_service, boost::asio::io_service& work_service)
+  void connect(boost::asio::io_service& io_service,
+      boost::asio::io_service& work_service)
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
         work_service,
         mutex_);
+
     // Use new handler to connect.
-    new_handler->connect(endpoint_iterator_);
+    new_handler->connect(endpoint_);
+  }
+
+  /// Make an connection to specific host with given io_service and work_service.
+  void connect(boost::asio::io_service& io_service,
+      boost::asio::io_service& work_service,
+      const std::string& address,
+      unsigned short port)
+  {
+    // Prepare endpoint for connect.
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+
+    // Get new handler for connect.
+    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
+        work_service,
+        mutex_);
+
+    // Use new handler to connect.
+    new_handler->connect(endpoint);
   }
 
   /// Make an connection with the given parent_handler.
@@ -79,8 +102,29 @@ public:
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler->io_service(),
         parent_handler->work_service(),
         mutex_);
+
     // Use new handler to connect.
-    new_handler->connect(endpoint_iterator_, parent_handler);
+    new_handler->connect(endpoint_, parent_handler);
+  }
+
+  /// Make an connection to specific host with the given parent_handler.
+  template<typename Parent_Handler>
+  void connect(Parent_Handler* parent_handler,
+      const std::string& address,
+      unsigned short port)
+  {
+    BOOST_ASSERT(parent_handler != 0);
+
+    // Prepare endpoint for connect.
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+
+    // Get new handler for connect.
+    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler->io_service(),
+        parent_handler->work_service(),
+        mutex_);
+
+    // Use new handler to connect.
+    new_handler->connect(endpoint, parent_handler);
   }
 
 private:
@@ -90,8 +134,8 @@ private:
   /// The pool of service_handler objects.
   service_handler_pool_ptr service_handler_pool_;
 
-  /// The server endpoint iterator.
-  boost::asio::ip::tcp::resolver::iterator endpoint_iterator_;
+  /// The server endpoint.
+  boost::asio::ip::tcp::endpoint endpoint_;
 };
 
 } // namespace bas

@@ -30,7 +30,8 @@ public:
   typedef bas::service_handler_pool<ssl_client_work, ssl_client_work_allocator, ssl_socket> client_handler_pool_type;
   typedef bas::client<ssl_client_work, ssl_client_work_allocator, ssl_socket> client_type;
 
-  explicit ssl_connections(const std::string& address, const std::string& port,
+  explicit ssl_connections(const std::string& address,
+      unsigned short port,
       std::size_t io_service_pool_size,
       std::size_t work_service_pool_size,
       std::size_t connection_number,

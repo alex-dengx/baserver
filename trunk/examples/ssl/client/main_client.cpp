@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
     }
 
     // Initialise server.
+    unsigned short port = boost::lexical_cast<unsigned short>(argv[2]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[3]);
     std::size_t thread_pool_size = boost::lexical_cast<std::size_t>(argv[4]);
     std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[5]);
@@ -46,7 +47,7 @@ int main(int argc, char* argv[])
     typedef bas::service_handler_pool<echo::ssl_client_work, echo::ssl_client_work_allocator, ssl_socket> ssl_client_handler_pool;
 
     echo::ssl_connections client(argv[1],
-        argv[2],
+        port,
         io_pool_size,
         thread_pool_size,
         connection_number,

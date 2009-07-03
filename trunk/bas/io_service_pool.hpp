@@ -48,12 +48,17 @@ public:
   {
     stop();
 
+    // Destroy all work.
+    for (std::size_t i = 0; i < work_.size(); ++i)
+      work_[i].reset();
+    work_.clear();
+
     // Destroy io_service pool.
     for (std::size_t i = 0; i < io_services_.size(); ++i)
       io_services_[i].reset();
     io_services_.clear();
   }
-  
+
   std::size_t size()
   {
     return io_services_.size();
@@ -79,10 +84,10 @@ public:
 
     // Allow all operations and handlers to be finished normally,
     // the work object may be explicitly destroyed.
-    for (std::size_t i = 0; i < work_.size(); ++i)
-      work_[i].reset();
 
     // Destroy all work.
+    for (std::size_t i = 0; i < work_.size(); ++i)
+      work_[i].reset();
     work_.clear();
 
     if (!block_)
@@ -119,10 +124,6 @@ private:
 
     // Destroy all threads.
     threads_.clear();
-
-    // Reset the io_service in preparation for a subsequent run() invocation.
-    for (std::size_t i = 0; i < io_services_.size(); ++i)
-      io_services_[i]->reset();
   }
 
   /// Start all io_service objects in the pool.
@@ -130,6 +131,12 @@ private:
   {
     if (threads_.size() != 0)
       return;
+
+    // Reset the io_service in preparation for a subsequent run() invocation.
+    for (std::size_t i = 0; i < io_services_.size(); ++i)
+    {
+      io_services_[i]->reset();
+    }
 
     for (std::size_t i = 0; i < io_services_.size(); ++i)
     {

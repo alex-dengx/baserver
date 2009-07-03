@@ -175,6 +175,8 @@ public:
   /// Start an asynchronous operation from any thread to read any amount of data from the socket.
   void async_read_some()
   {
+    BOOST_ASSERT(read_buffer().space() != 0);
+
     async_read_some(boost::asio::buffer(read_buffer().data() + read_buffer().size(), read_buffer().space()));
   }
 
@@ -221,6 +223,14 @@ public:
         buffers));
   }
 #endif
+
+  /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
+  void async_write()
+  {
+    BOOST_ASSERT(write_buffer().size() != 0);
+
+    async_write(boost::asio::buffer(write_buffer().data(), write_buffer().size()));
+  }
 
   /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
   void async_write(std::size_t length)
@@ -349,11 +359,11 @@ private:
     write_buffer().clear();
 
     // Clear work handler for new operations.
-    work_handler_->clear();
+    work_handler_->on_clear(*this);
   }
 
   /// Start an asynchronous connect.
-  void connect(boost::asio::ip::tcp::resolver::iterator& endpoint_iterator)
+  void connect(boost::asio::ip::tcp::endpoint& endpoint)
   {
     BOOST_ASSERT(socket_.get() != 0);
     BOOST_ASSERT(timer_.get() != 0);
@@ -364,7 +374,7 @@ private:
     if (timer_count_ == 0)
       set_expiry(timeout_seconds_);
 
-    socket().lowest_layer().async_connect(endpoint_iterator->endpoint(),
+    socket().lowest_layer().async_connect(endpoint,
         boost::bind(&service_handler_type::handle_connect,
             shared_from_this(),
             boost::asio::placeholders::error));
@@ -372,7 +382,7 @@ private:
 
   /// Start an asynchronous connect with the parent handler.
   template<typename Parent_Handler>
-  void connect(boost::asio::ip::tcp::resolver::iterator& endpoint_iterator,
+  void connect(boost::asio::ip::tcp::endpoint& endpoint,
       Parent_Handler* handler)
   {
     BOOST_ASSERT(handler != 0);
@@ -383,7 +393,7 @@ private:
     parent_handler(handler);
     handler->child_handler(this);
 
-    connect(endpoint_iterator);
+    connect(endpoint);
   }
 
   /// Start the first operation.

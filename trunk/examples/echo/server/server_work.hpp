@@ -27,17 +27,23 @@ public:
   {
   }
   
-  void clear()
+  void on_clear(server_handler_type& handler)
   {
   }
   
   void on_open(server_handler_type& handler)
   {
+//    std::cout << "client ip is " << handler.socket().remote_endpoint().address().to_string() << "\n";
+//    std::cout.flush();
+
     handler.async_read_some();
   }
 
   void on_read(server_handler_type& handler, std::size_t bytes_transferred)
   {
+    std::cout << "receive ok ...............\n";
+    std::cout.flush();
+
     handler.async_write(boost::asio::buffer(handler.read_buffer().data(), bytes_transferred));
   }
 

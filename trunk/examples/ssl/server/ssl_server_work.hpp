@@ -33,7 +33,7 @@ public:
   {
   }
   
-  void clear()
+  void on_clear(server_handler_type& handler)
   {
   }
   

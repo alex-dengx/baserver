@@ -44,6 +44,8 @@ int main(int argc, char* argv[])
     }
 
     // Initialise server.
+    unsigned short port_src = boost::lexical_cast<unsigned short>(argv[2]);
+    unsigned short port_dst = boost::lexical_cast<unsigned short>(argv[4]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[5]);
     std::size_t thread_pool_size = boost::lexical_cast<std::size_t>(argv[6]);
     std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[7]);
@@ -56,11 +58,11 @@ int main(int argc, char* argv[])
     typedef bas::service_handler_pool<proxy::client_work, proxy::client_work_allocator> client_handler_pool;
 
     server s(argv[1],
-        argv[2],
+        port_src,
         io_pool_size,
         thread_pool_size,
         new server_handler_pool(new proxy::server_work_allocator(argv[3],
-                argv[4],
+                port_dst,
                 new client_handler_pool(new proxy::client_work_allocator(),
                     preallocated_handler_number,
                     read_buffer_size,
