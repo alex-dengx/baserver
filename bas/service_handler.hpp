@@ -480,7 +480,8 @@ private:
         buffers,
         boost::bind(&service_handler_type::handle_write,
             shared_from_this(),
-            boost::asio::placeholders::error));
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
   }
 
   /// Set timer for connection.
@@ -539,7 +540,8 @@ private:
   }
 
   /// Handle completion of a write operation in io_service thread.
-  void handle_write(const boost::system::error_code& e)
+  void handle_write(const boost::system::error_code& e,
+      std::size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -549,7 +551,8 @@ private:
     {
       // Post to work_service for executing do_write.
       work_service().post(boost::bind(&service_handler_type::do_write,
-          shared_from_this()));
+          shared_from_this(),
+          bytes_transferred));
     }
     else
     {
@@ -626,14 +629,14 @@ private:
   }
 
   /// Do on_write in work_service thread.
-  void do_write()
+  void do_write(std::size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
       return;
 
     // Call on_write function of the work handler.
-    work_handler_->on_write(*this);
+    work_handler_->on_write(*this, bytes_transferred);
   }
 
   /// Do on_parent in work_service thread.

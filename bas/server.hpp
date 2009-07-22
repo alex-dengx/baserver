@@ -91,6 +91,12 @@ public:
     // Stop work_service_pool.
     work_service_pool_.stop();
 
+    // Dispatch ready handlers.
+    work_service_pool_.start();
+    io_service_pool_.start();
+    io_service_pool_.stop();
+    work_service_pool_.stop();
+
     started_ = false;
   }
 

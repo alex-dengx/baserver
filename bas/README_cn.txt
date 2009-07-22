@@ -16,8 +16,8 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨×¼È·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
 2¡¢Work_HandlerÀà¸ºÔðÖ´ÐÐÒµÎñÂß¼­£¬±ØÐëÊµÏÖÈçÏÂº¯Êý£º
    on_clear:  Á¬½Ó¿ªÊ¼Ç°±»µ÷ÓÃ£¬Ä¿µÄÊÇ½«ËùÓÐÄÚ²¿±äÁ¿Çå³ýÎª³õÊ¼×´Ì¬£»
    on_open:   µ±Á¬½Ó½¨Á¢³É¹¦ºó½«Ê×ÏÈ±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏó£»
-   on_read:   µ±¶Á²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏóºÍ³É¹¦¶ÁÈ¡Êý¾Ý³¤¶È£»
-   on_write:  µ±Ð´²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏó£»
+   on_read:   µ±¶Á²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏóºÍ³É¹¦¶ÁÊý¾Ý³¤¶È£»
+   on_write:  µ±Ð´²Ù×÷Õý³£Íê³Éºó±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏóºÍ³É¹¦Ð´Êý¾Ý³¤¶È£»
    on_close:  µ±Á¬½Ó¹Ø±ÕÊ±±»µ÷ÓÃ£¬²ÎÊýÎª¸ºÔðI/O²Ù×÷µÄservice_handler¶ÔÏóºÍ´íÎóÔ­Òò£¬´íÎóÔ­ÒòÖ÷Òª°üÀ¨£º
                   0, ²Ù×÷³É¹¦Íê³É£¬Á¬½ÓÕý³£¹Ø±Õ£»
                   boost::asio::error::eof, ²Ù×÷³É¹¦Íê³É£¬Á¬½Ó±»¶Ô¶Ë¸É¾»µÄ¹Ø±Õ£»
@@ -28,8 +28,12 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨×¼È·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
    ÔÚÉÏÊöº¯ÊýÖÐ£¬¿ÉÍ¨¹ýµ÷ÓÃservice_handler¶ÔÏóµÄasync_read_some¡¢async_read¡¢async_writeµÈº¯ÊýÊµÏÖI/O²Ù×÷£¬ÐèÒªÖ÷¶¯¹Ø±ÕÁ¬½ÓÊ±µ÷ÓÃclose¼´¿É¡£¾ßÌåÓÃ·¨Çë²Î¿¼Ê¾Àý£»
 
 Èý¡¢°æ±¾ÀúÊ·
-1¡¢µ±Ç°°æ±¾ÊÇ0.30.0£¬Îª³õÊ¼¹«¿ª·¢²¼°æ±¾£»
-2¡¢ÐÞÕýÄÚÈÝ£ºÎÞ¡£
+1¡¢0.30.0£¬³õÊ¼¹«¿ª·¢²¼°æ±¾£»
+2¡¢0.30.5£¬½øÒ»²½ÍêÉÆ½Ó¿Ú£¬Ö÷Òª¸Ä±ä°üÀ¨£º
+   *½«Ä£°åº¯ÊýµÄclear()¸ÄÎªÓëÆäËüº¯ÊýÀàËÆµÄon_clear()£»
+   *Ö±½ÓÊ¹ÓÃendpointÁ¬½Óhost£¬ÏàÓ¦ÐÞ¸ÄÁË¶ÔÓ¦º¯ÊýµÄport²ÎÊýÀàÐÍ£»
+   *Ôö¼Óconnect½Ó¿Ú£¬ÔÊÐíÓÃ×÷´úÀíÊ±ÁÙÊ±Ö¸¶¨Á¬½Óhost£»
+3¡¢0.30.6£¬on_write½Ó¿Úµ÷ÕûÎªÓëon_readÀàËÆ£¬Ôö¼Ó³É¹¦Ð´Êý¾Ý³¤¶È²ÎÊý¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£
