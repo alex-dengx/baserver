@@ -97,7 +97,7 @@ public:
     }
 
     // Bind the service handler with given io_service and work_service.
-    service_handler->bind(io_service, work_service, work_allocator_.get());
+    service_handler->bind(io_service, work_service, work_allocator());
     return service_handler;
   }
 
@@ -112,15 +112,24 @@ public:
   }
 
 private:
+  
+  /// Get the allocator for work.
+  work_allocator_type& work_allocator()
+  {
+    return *work_allocator_;
+  }
+  
   /// Make one service_handler.
   service_handler_type* make_handler()
   {
-    return new service_handler_type(work_allocator_->make_handler(),
+    return new service_handler_type(work_allocator().make_handler(),
         read_buffer_size_,
         write_buffer_size_,
         timeout_seconds_,
         closed_wait_delay_);
   }
+
+private:
 
   /// The pool of preallocated service_handler.
   std::vector<service_handler_ptr> service_handlers_;

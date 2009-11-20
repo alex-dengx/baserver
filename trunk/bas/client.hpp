@@ -63,26 +63,9 @@ public:
 
   /// Make an connection with given io_service and work_service.
   void connect(boost::asio::io_service& io_service,
-      boost::asio::io_service& work_service)
-  {
-    // Get new handler for connect.
-    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
-        work_service,
-        mutex_);
-
-    // Use new handler to connect.
-    new_handler->connect(endpoint_);
-  }
-
-  /// Make an connection to specific host with given io_service and work_service.
-  void connect(boost::asio::io_service& io_service,
       boost::asio::io_service& work_service,
-      const std::string& address,
-      unsigned short port)
+      boost::asio::ip::tcp::endpoint& endpoint)
   {
-    // Prepare endpoint for connect.
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
-
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
         work_service,
@@ -94,37 +77,62 @@ public:
 
   /// Make an connection with the given parent_handler.
   template<typename Parent_Handler>
-  void connect(Parent_Handler* parent_handler)
+  void connect(Parent_Handler& parent_handler,
+      boost::asio::ip::tcp::endpoint& endpoint)
   {
-    BOOST_ASSERT(parent_handler != 0);
-
     // Get new handler for connect.
-    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler->io_service(),
-        parent_handler->work_service(),
+    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler.io_service(),
+        parent_handler.work_service(),
         mutex_);
 
+    // Execute in work_thread, because connect will be called in the same thread.
+    parent_handler.set_child(new_handler.get());
+    new_handler->set_parent(&parent_handler);
+    
     // Use new handler to connect.
-    new_handler->connect(endpoint_, parent_handler);
+    new_handler->connect(endpoint);
+  }
+
+  /// Make an connection with given io_service and work_service.
+  void connect(boost::asio::io_service& io_service,
+      boost::asio::io_service& work_service)
+  {
+    // Connect with the internal endpoint.
+    connect(io_service, work_service, endpoint_);
+  }
+
+  /// Make an connection to specific host with given io_service and work_service.
+  void connect(boost::asio::io_service& io_service,
+      boost::asio::io_service& work_service,
+      const std::string& address,
+      unsigned short port)
+  {
+    // Prepare endpoint for connect.
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+
+    // Connect with the given endpoint.
+    connect(io_service, work_service, endpoint);
+  }
+
+  /// Make an connection with the given parent_handler.
+  template<typename Parent_Handler>
+  void connect(Parent_Handler& parent_handler)
+  {
+    // Connect with the internal endpoint.
+    connect(parent_handler, endpoint_);
   }
 
   /// Make an connection to specific host with the given parent_handler.
   template<typename Parent_Handler>
-  void connect(Parent_Handler* parent_handler,
+  void connect(Parent_Handler& parent_handler,
       const std::string& address,
       unsigned short port)
   {
-    BOOST_ASSERT(parent_handler != 0);
-
     // Prepare endpoint for connect.
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
 
-    // Get new handler for connect.
-    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler->io_service(),
-        parent_handler->work_service(),
-        mutex_);
-
-    // Use new handler to connect.
-    new_handler->connect(endpoint, parent_handler);
+    // Connect with the given endpoint.
+    connect(parent_handler, endpoint);
   }
 
 private:
