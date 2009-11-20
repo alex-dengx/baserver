@@ -69,13 +69,13 @@ public:
     else
     {
       handler.read_buffer().clear();
-      clear();
+      on_clear(handler);
 
       handler.async_read_some();
     }
   }
 
-  void on_write(server_handler_type& handler)
+  void on_write(server_handler_type& handler, std::size_t bytes_transferred)
   {
     handler.close();
   }

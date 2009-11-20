@@ -65,7 +65,7 @@ public:
     handler.close();
   }
 
-  void on_write(client_handler_type& handler)
+  void on_write(client_handler_type& handler, std::size_t bytes_transferred)
   {
     handler.async_read_some();
   }

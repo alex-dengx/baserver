@@ -25,20 +25,24 @@ class server_work
 {
 public:
   typedef bas::service_handler<server_work> server_handler_type;
-  typedef bas::service_handler<client_work> child_handler_type;
+  typedef bas::service_handler<client_work> client_handler_type;
   typedef bas::client<client_work, client_work_allocator> client_type;
 
   server_work(client_type& client)
-    : client_(client)
+    : client_(client),
+      child_handler_(0)
   {
   }
 
-  child_handler_type* child_handler(server_handler_type& handler)
+/*
+  void on_set_parent(server_handler_type& handler, server_handler_type* parent_handler)
   {
-    if (handler.child_handler() == 0)
-      return 0;
-    else
-      return *boost::any_cast<child_handler_type*>(handler.child_handler());
+  }
+*/
+
+  void on_set_child(server_handler_type& handler, client_handler_type* child_handler)
+  {
+    child_handler_ = child_handler;
   }
   
   void on_clear(server_handler_type& handler)
@@ -47,23 +51,26 @@ public:
 
   void on_open(server_handler_type& handler)
   {
-    client_.connect(&handler);
+    client_.connect(handler);
   }
 
   void on_read(server_handler_type& handler, std::size_t bytes_transferred)
   {
-    child_handler(handler)->post_parent(bas::event(bas::event::parent_write, bytes_transferred));
+    child_handler_->post_parent(bas::event(bas::event::parent_write, bytes_transferred));
   }
 
-  void on_write(server_handler_type& handler)
+  void on_write(server_handler_type& handler, std::size_t bytes_transferred)
   {
     handler.async_read_some();
   }
 
   void on_close(server_handler_type& handler, const boost::system::error_code& e)
   {
-    if (child_handler(handler) != 0)
-      child_handler(handler)->close();
+    if (child_handler_ != 0)
+    {
+      child_handler_->post_parent(bas::event(bas::event::parent_close));
+      child_handler_ = 0;
+    }
 
     switch (e.value())
     {
@@ -102,9 +109,10 @@ public:
         handler.async_read_some();
         break;
       case bas::event::child_write:
-        handler.async_write(boost::asio::buffer(child_handler(handler)->read_buffer().data(), event.value_));
+        handler.async_write(boost::asio::buffer(child_handler_->read_buffer().data(), event.value_));
         break;
       case bas::event::child_close:
+        child_handler_ = 0;
         handler.close();
         break;
     }
@@ -112,6 +120,8 @@ public:
 
 private:
   client_type& client_;
+  
+  client_handler_type* child_handler_;
 };
 
 } // namespace proxy

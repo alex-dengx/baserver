@@ -33,23 +33,31 @@ public:
   
   void on_open(server_handler_type& handler)
   {
-//    std::cout << "client ip is " << handler.socket().remote_endpoint().address().to_string() << "\n";
-//    std::cout.flush();
+    std::cout << "connect ok ...............\n";
+    std::cout.flush();
+
+    //std::cout << "client ip is " << handler.socket().remote_endpoint().address().to_string() << "\n";
+    //std::cout.flush();
 
     handler.async_read_some();
   }
 
   void on_read(server_handler_type& handler, std::size_t bytes_transferred)
   {
-    std::cout << "receive ok ...............\n";
+    std::cout << "receive " << bytes_transferred << " bytes ok ...............\n";
     std::cout.flush();
 
     handler.async_write(boost::asio::buffer(handler.read_buffer().data(), bytes_transferred));
   }
 
-  void on_write(server_handler_type& handler)
+  void on_write(server_handler_type& handler, std::size_t bytes_transferred)
   {
-    handler.close();
+    std::cout << "send " << bytes_transferred << " bytes ok ...............\n";
+    std::cout.flush();
+
+    handler.async_read_some();
+
+//    handler.close();
   }
 
   void on_close(server_handler_type& handler, const boost::system::error_code& e)
@@ -59,6 +67,8 @@ public:
       // Operation successfully completed.
       case 0:
       case boost::asio::error::eof:
+        std::cout << "close ok ...............\n";
+        std::cout.flush();
         break;
 
       // Connection breaked.
