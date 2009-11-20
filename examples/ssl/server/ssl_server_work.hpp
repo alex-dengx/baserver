@@ -63,7 +63,7 @@ public:
     handler.async_write(boost::asio::buffer(handler.read_buffer().data(), bytes_transferred));
   }
 
-  void on_write(server_handler_type& handler)
+  void on_write(server_handler_type& handler, std::size_t bytes_transferred)
   {
     handler.close();
   }

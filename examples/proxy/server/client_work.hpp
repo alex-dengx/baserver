@@ -26,40 +26,46 @@ public:
   typedef bas::service_handler<server_work> server_handler_type;
 
   client_work()
+    : parent_handler_(0)
   {
   }
   
-  server_handler_type* parent_handler(client_handler_type& handler)
+  void on_set_parent(client_handler_type& handler, server_handler_type* parent_handler)
   {
-    if (handler.parent_handler() == 0)
-      return 0;
-    else
-      return *boost::any_cast<server_handler_type*>(handler.parent_handler());
+    parent_handler_ = parent_handler;
   }
 
+/*
+  void on_set_child(client_handler_type& handler, client_handler_type* child_handler)
+  {
+  }
+*/
   void on_clear(client_handler_type& handler)
   {
   }
   
   void on_open(client_handler_type& handler)
   {
-    parent_handler(handler)->post_child(bas::event(bas::event::child_open));
+    parent_handler_->post_child(bas::event(bas::event::child_open));
   }
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)
   {
-    parent_handler(handler)->post_child(bas::event(bas::event::child_write, bytes_transferred));
+    parent_handler_->post_child(bas::event(bas::event::child_write, bytes_transferred));
   }
 
-  void on_write(client_handler_type& handler)
+  void on_write(client_handler_type& handler, std::size_t bytes_transferred)
   {
     handler.async_read_some();
   }
 
   void on_close(client_handler_type& handler, const boost::system::error_code& e)
   {
-    if (parent_handler(handler) != 0)
-      parent_handler(handler)->close();
+    if (parent_handler_ != 0)
+    {
+      parent_handler_->post_child(bas::event(bas::event::child_close));
+      parent_handler_ = 0;
+    }
 
     switch (e.value())
     {
@@ -91,7 +97,12 @@ public:
     switch (event.state_)
     {
       case bas::event::parent_write:
-        handler.async_write(boost::asio::buffer(parent_handler(handler)->read_buffer().data(), event.value_));
+        handler.async_write(boost::asio::buffer(parent_handler_->read_buffer().data(), event.value_));
+        break;
+
+      case bas::event::parent_close:
+        parent_handler_ = 0;
+        handler.close();
         break;
     }
   }
@@ -99,6 +110,9 @@ public:
   void on_child(client_handler_type& handler, const bas::event event)
   {
   }
+
+private:
+  server_handler_type* parent_handler_;
 };
 
 } // namespace proxy
