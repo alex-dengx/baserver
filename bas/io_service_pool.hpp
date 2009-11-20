@@ -106,9 +106,10 @@ public:
   /// Get the certain io_service to use.
   boost::asio::io_service& get_io_service(std::size_t offset)
   {
-    BOOST_ASSERT(offset < io_services_.size());
-
-    return *io_services_[offset];
+    if (offset < io_services_.size())
+      return *io_services_[offset];
+    else
+      return get_io_service();
   }
 
 private:
