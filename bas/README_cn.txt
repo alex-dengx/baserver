@@ -3,12 +3,12 @@ basÎªboost_asio_server(baserver)µÄ¼ò³Æ£¬ÊÇ²ÉÓÃHalf-Sync/Half-AsyncÄ£Ê½µÄ·þÎñÆ÷¿ò
 basÄ¿Ç°ÊµÏÖÁËÒÔÏÂ¹¦ÄÜ£º
 1¡¢µ×²ã»ùÓÚboost¼°asioÊµÏÖ£¬Ö§³Össl£¬¿çÔ½¶àÖÖ²Ù×÷ÏµÍ³Æ½Ì¨£»
 2¡¢I/O²¿·ÖÊ¹ÓÃ·Ç×èÈûÒì²½´¦Àí»úÖÆ£¬ÒµÎñÂß¼­´¦Àí²¿·Ö²ÉÓÃÍ¬²½Ïß³Ì³Ø£¬±ãÓÚ¸üºÃµÄÀûÓÃ¶à´¦ÀíÆ÷×ÊÔ´£»
-3¡¢·â×°´¦Àí¸÷ÖÖI/O²Ù×÷¼°×´Ì¬£¬²ÉÓÃÎÞ¹²ÏíËø/ÎÞÒýÓÃ¼ÆÊýÉè¼Æ£¬¿ØÖÆÂß¼­ÇåÎú¡¢¼òµ¥£¬ÓÃ»§Ó¦ÓÃ³ÌÐòÎÞÐë¹ØÐÄI/O²Ù×÷Ï¸½Ú£¬Ö»ÐèÒª¹ØÐÄÒµÎñÂß¼­µÄ¾ßÌåÊµÏÖ£»
+3¡¢·â×°´¦Àí¸÷ÖÖI/O²Ù×÷¼°×´Ì¬£¬²ÉÓÃÎÞ¹²ÏíËøÉè¼Æ£¬¿ØÖÆÂß¼­ÇåÎú¡¢¼òµ¥£¬ÓÃ»§Ó¦ÓÃ³ÌÐòÎÞÐë¹ØÐÄI/O²Ù×÷Ï¸½Ú£¬Ö»ÐèÒª¹ØÐÄÒµÎñÂß¼­µÄ¾ßÌåÊµÏÖ£»
 4¡¢Ìá¹©¶à¼¶tcp server·ÃÎÊ´¦Àí»úÖÆ£¬·Ç³£ÈÝÒ×ÊµÏÖ¸÷ÖÖ´úÀí·þÎñÆ÷£»
 5¡¢Ìá¹©echo_server/echo_client¡¢ssl_server/ssl_client¡¢proxy_server¡¢http_server(»ùÓÚasioµÄhttp serverÊ¾Àý)µÈÊ¾Àý¹©²Î¿¼¡£
 
 ¶þ¡¢bas¼òµ¥ËµÃ÷
-bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨×¼È·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµÄ¾ßÌåÊµÏÖÒªÇóËµÃ÷ÈçÏÂ£º
+bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµÄ¾ßÌåÊµÏÖÒªÇóËµÃ÷ÈçÏÂ£º
 1¡¢ÓÉWork_AllocatorÀà¸ºÔðÐÂ½¨Work_HandlerÀàÊµÀý£¬±ØÐëÊµÏÖÈçÏÂº¯Êý£º
    make_handler:  ÐÂ½¨Ò»¸öWork_HandlerÀàÊµÀý£»
    make_socket:   ÐÂ½¨Ò»¸ötcp::socket»òssl::streamÀàÊµÀý£¬¿´ÆðÀ´ÊÇ±È½ÏÆæ¹ÖµÄÉè¼Æ£¬²»¹ýÎªÁËÊÊÓÃÓÚ´´½¨ssl::streamÀà£¬±ØÐë´ÓWork_AllocatorÀàÖÐ»ñµÃcontext²ÎÊý£»
@@ -36,7 +36,11 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â(Ó¢ÎÄ£¬µ«²»Ò»¶¨×¼È·£¬ÇëÁÂ½â)£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓ
    *Ö±½ÓÊ¹ÓÃendpointÁ¬½Óhost£¬ÏàÓ¦ÐÞ¸ÄÁË¶ÔÓ¦º¯ÊýµÄport²ÎÊýÀàÐÍ£»
    *Ôö¼Óconnect½Ó¿Ú£¬ÔÊÐíÓÃ×÷´úÀíÊ±ÁÙÊ±Ö¸¶¨Á¬½Óhost£»
 3¡¢0.30.6£¬on_write½Ó¿Úµ÷ÕûÎªÓëon_readÀàËÆ£¬Ôö¼Ó³É¹¦Ð´Êý¾Ý³¤¶È²ÎÊý£»
-4¡¢0.40.0£¬µ÷Õû¸¸/×ÓÁ¬½ÓµÄÊµÏÖ·½Ê½£¬ÓÉÓ¦ÓÃ³ÌÐò¸ºÔð¹ÜÀí¸¸¡¢×ÓÁ¬½ÓÖ®¼äµÄËùÓÐ¶¯×÷¡£
+4¡¢0.40.0£¬µ÷Õû¸¸/×ÓÁ¬½ÓµÄÊµÏÖ·½Ê½£¬ÓÉÓ¦ÓÃ³ÌÐò¸ºÔð¹ÜÀí¸¸¡¢×ÓÁ¬½ÓÖ®¼äµÄËùÓÐ¶¯×÷£»
+4¡¢0.50.0£¬ÓÅ»¯Éè¼Æ£¬Ö÷Òª¸Ä±ä°üÀ¨£º
+   *ÓÅ»¯io_service_poolÉè¼Æ£¬Ê¹ÓÃget_io_service(std::size_t load)¿ÉÔÚÖØ¸ºÔØÊ±Ôö¼Ó¹¤×÷Ïß³Ì£»
+   *µ÷Õûservice_handler_poolÉè¼Æ£¬¿É¸üºÃµØÊÊÓ¦Á¬½Ó³ØµÄ¶¯Ì¬µ÷Õû£»
+   *¶Ôservice_handlerºÍserver¡¢client×÷ÁËÏàÓ¦µ÷Õû¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£

@@ -23,6 +23,8 @@
 
 namespace bas {
 
+#define BAS_GRACEFUL_CLOSED_WAIT_LOOP  5
+
 /// The top-level class of the server.
 template<typename Work_Handler, typename Work_Allocator, typename Socket_Service = boost::asio::ip::tcp::socket>
 class server
@@ -40,18 +42,22 @@ public:
   /// Construct the server to listen on the specified TCP address and port.
   explicit server(const std::string& address,
       unsigned short port,
-      std::size_t io_service_pool_size,
-      std::size_t work_service_pool_size,
+      std::size_t io_pool_size,
+      std::size_t work_pool_init_size,
+      std::size_t work_pool_high_watermark,
       service_handler_pool_type* service_handler_pool)
     : accept_service_pool_(1),
-      io_service_pool_(io_service_pool_size),
-      work_service_pool_(work_service_pool_size),
+      io_service_pool_(io_pool_size),
+      work_service_pool_(work_pool_init_size, work_pool_high_watermark),
       service_handler_pool_(service_handler_pool),
       acceptor_(accept_service_pool_.get_io_service()),
       endpoint_(boost::asio::ip::address::from_string(address), port),
       started_(false)
   {
     BOOST_ASSERT(service_handler_pool != 0);
+
+    // Create preallocated handlers of the pool.
+    service_handler_pool->init();
   }
   
   /// Destruct the server object.
@@ -91,8 +97,8 @@ public:
     // Stop work_service_pool.
     work_service_pool_.stop();
 
-    // Dispatch ready handlers.
-    for (std::size_t i = 0; i < 5; ++i)
+    // For gracefully close as possible, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
+    for (std::size_t i = 0; i < BAS_GRACEFUL_CLOSED_WAIT_LOOP; ++i)
     {
       work_service_pool_.start();
       io_service_pool_.start();
@@ -123,7 +129,8 @@ private:
   {
     // Get new handler for accept, and bind with acceptor's io_service.
     service_handler_ptr handler = service_handler_pool_->get_service_handler(io_service_pool_.get_io_service(),
-        work_service_pool_.get_io_service());
+        work_service_pool_.get_io_service(service_handler_pool_->get_load()));
+
     // Use new handler to accept.
     acceptor_.async_accept(handler->socket().lowest_layer(),
         boost::bind(&server::handle_accept,
