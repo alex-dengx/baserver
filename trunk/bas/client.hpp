@@ -11,7 +11,6 @@
 #ifndef BAS_CLIENT_HPP
 #define BAS_CLIENT_HPP
 
-#include <boost/asio/detail/mutex.hpp>
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -39,19 +38,23 @@ public:
   client(const std::string& address,
       unsigned short port,
       service_handler_pool_type* service_handler_pool)
-    : mutex_(),
-      service_handler_pool_(service_handler_pool),
+    : service_handler_pool_(service_handler_pool),
       endpoint_(boost::asio::ip::address::from_string(address), port)
   {
     BOOST_ASSERT(service_handler_pool != 0);
+
+    // Create preallocated handlers of the pool.
+    service_handler_pool->init();  
   }
 
   /// Construct the client object for connect to specified TCP address and port.
   client(service_handler_pool_type* service_handler_pool)
-    : mutex_(),
-      service_handler_pool_(service_handler_pool)
+    : service_handler_pool_(service_handler_pool)
   {
     BOOST_ASSERT(service_handler_pool != 0);
+
+    // Create preallocated handlers of the pool.
+    service_handler_pool->init();
   }
 
   /// Destruct the client object.
@@ -68,8 +71,7 @@ public:
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
-        work_service,
-        mutex_);
+        work_service);
 
     // Use new handler to connect.
     new_handler->connect(endpoint);
@@ -82,8 +84,7 @@ public:
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler.io_service(),
-        parent_handler.work_service(),
-        mutex_);
+        parent_handler.work_service());
 
     // Execute in work_thread, because connect will be called in the same thread.
     parent_handler.set_child(new_handler.get());
@@ -136,9 +137,6 @@ public:
   }
 
 private:
-  /// Mutex to protect access to internal data.
-  boost::asio::detail::mutex mutex_;
-
   /// The pool of service_handler objects.
   service_handler_pool_ptr service_handler_pool_;
 

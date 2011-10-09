@@ -2,7 +2,7 @@
 // service_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2009 Xu Ye Jun (moore.xu@gmail.com)
+// Copyright (c) 2011 Xu Ye Jun (moore.xu@gmail.com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -77,8 +77,7 @@ public:
   explicit service_handler(work_handler_type* work_handler,
       std::size_t read_buffer_size,
       std::size_t write_buffer_size,
-      std::size_t timeout_seconds,
-      std::size_t closed_wait_delay)
+      std::size_t timeout_seconds)
     : work_handler_(work_handler),
       socket_(),
       timer_(),
@@ -86,15 +85,11 @@ public:
       work_service_(0),
       timer_count_(0),
       stopped_(true),
-      closed_(true),
       timeout_seconds_(timeout_seconds),
-      closed_wait_time_(boost::posix_time::seconds(closed_wait_delay)),
-      restriction_time_(boost::posix_time::microsec_clock::universal_time()),
       read_buffer_(read_buffer_size),
       write_buffer_(write_buffer_size)
   {
     BOOST_ASSERT(work_handler != 0);
-    BOOST_ASSERT(closed_wait_delay != 0);
   }
   
   /// Destruct the service handler.
@@ -235,12 +230,6 @@ private:
   template<typename, typename, typename> friend class client;
   template<typename, typename> friend class service_handler;
 
-  /// Check handler is in busy or not.
-  bool is_busy()
-  {
-    return !closed_ || (boost::posix_time::microsec_clock::universal_time() < restriction_time_);
-  }
-
   /// Bind a service_handler with the given io_service and work_service.
   template<typename Work_Allocator>
   void bind(boost::asio::io_service& io_service,
@@ -249,7 +238,6 @@ private:
   {
     BOOST_ASSERT(timer_count_ == 0);
 
-    closed_ = false;
     stopped_ = false;
 
     socket_.reset(work_allocator.make_socket(io_service));
@@ -263,6 +251,7 @@ private:
     write_buffer().clear();
 
     // Clear work handler for new operations.
+    // Only low-level operations used to perform the necessary and should return ASAP.
     work_handler_->on_clear(*this);
   }
 
@@ -560,11 +549,6 @@ private:
 
     timer_.reset();
 
-    // Set restriction time before reuse, wait uncompleted operations to be finished.
-    restriction_time_ = boost::posix_time::microsec_clock::universal_time() + closed_wait_time_;
-
-    closed_ = true;
-
     // Leave socket to destroy delay for finishing uncompleted SSL operations.
     // Leave io_service_/work_service_ for finishing uncompleted operations.
   }
@@ -595,18 +579,8 @@ private:
   // Flag to indicate that the handler has been stopped and can not do synchronous operations.
   bool stopped_;
 
-  // Flag to indicate that the handler has been closed and can be reuse again after some seconds.
-  bool closed_;
-
   /// The expiry seconds of connection.
   std::size_t timeout_seconds_;
-
-  /// For graceful close, if preallocated service_handler number is not huge enough,
-  /// should delay some seconds before any handler reuse again.
-  boost::posix_time::time_duration closed_wait_time_;
-
-  /// The time of hander can use again.
-  boost::posix_time::ptime restriction_time_;
 
   /// Buffer for incoming data.
   io_buffer read_buffer_;
