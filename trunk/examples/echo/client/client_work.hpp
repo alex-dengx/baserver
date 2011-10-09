@@ -34,12 +34,16 @@ public:
 
   void on_open(client_handler_type& handler)
   {
+/*
     boost::posix_time::ptime time_epoch(boost::gregorian::date(1970,1,1)); 
     boost::posix_time::ptime time_start = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::time_duration td_epoch = time_start - time_epoch;
     srand(td_epoch.total_milliseconds());
 
     handler.async_write(boost::asio::buffer(echo_message, rand() % echo_message.size() + 1));
+*/
+    handler.async_write(boost::asio::buffer(echo_message));
+
   }
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)

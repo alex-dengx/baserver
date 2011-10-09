@@ -47,21 +47,21 @@ int main(int argc, char* argv[])
     // Check command line arguments.
     if (argc != 9)
     {
-      std::cerr << "Usage: http_server <address> <port> <io_pool_size> <thread_pool_size> <preallocated_handler_number> <timeout_seconds> <closed_wait> <doc_root>\n";
+      std::cerr << "Usage: http_server <address> <port> <io_pool_size> <work_pool_init_size> <work_pool_high_watermark> <preallocated_handler_number> <timeout_seconds> <doc_root>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    http_server 0.0.0.0 80 4 4 500 0 5 .\n";
+      std::cerr << "    http_server 0.0.0.0 80 4 4 16 500 0 .\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    http_server 0::0 80 4 4 500 0 5 .\n";
+      std::cerr << "    http_server 0::0 80 4 4 16 500 0 .\n";
       return 1;
     }
 
     // Initialise server.
     unsigned short port = boost::lexical_cast<unsigned short>(argv[2]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[3]);
-    std::size_t thread_pool_size = boost::lexical_cast<std::size_t>(argv[4]);
-    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[5]);
-    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[6]);
-    std::size_t closed_wait = boost::lexical_cast<std::size_t>(argv[7]);
+    std::size_t work_pool_init_size = boost::lexical_cast<std::size_t>(argv[4]);
+    std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[5]);
+    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[6]);
+    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[7]);
 
     typedef bas::server<http::server::server_work, http::server::server_work_allocator> server;
     typedef bas::service_handler_pool<http::server::server_work, http::server::server_work_allocator> server_handler_pool;
@@ -69,13 +69,13 @@ int main(int argc, char* argv[])
     server s(argv[1],
         port,
         io_pool_size,
-        thread_pool_size,
+        work_pool_init_size,
+        work_pool_high_watermark,
         new server_handler_pool(new http::server::server_work_allocator(argv[8]),
             preallocated_handler_number,
             8192,
             0,
-            timeout_seconds,
-            closed_wait));
+            timeout_seconds));
 
     // Set console control handler to allow server to be stopped.
     console_ctrl_function = boost::bind(&server::stop, &s);

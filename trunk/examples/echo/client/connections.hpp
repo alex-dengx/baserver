@@ -33,12 +33,13 @@ public:
 
   explicit connections(const std::string& address,
       unsigned short port,
-      std::size_t io_service_pool_size,
-      std::size_t work_service_pool_size,
+      std::size_t io_pool_size,
+      std::size_t work_pool_init_size,
+      std::size_t work_pool_high_watermark,
       std::size_t connection_number,
       client_handler_pool_type* service_handler_pool)
-    : io_service_pool_(io_service_pool_size),
-      work_service_pool_(work_service_pool_size),
+    : io_service_pool_(io_pool_size),
+      work_service_pool_(work_pool_init_size, work_pool_high_watermark),
       client_(address,
           port,
           service_handler_pool),
@@ -60,12 +61,12 @@ public:
 
     io_service_pool_.stop();
     work_service_pool_.stop();
-
+/*
     work_service_pool_.start();
     io_service_pool_.start();
     io_service_pool_.stop();
     work_service_pool_.stop();
-
+*/
     boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.\n";
     std::cout.flush();
@@ -79,11 +80,8 @@ public:
 
 private:
   bas::io_service_pool io_service_pool_;
-
   bas::io_service_pool work_service_pool_;
-
   client_type client_;
-
   std::size_t connection_number_;
 };
 
