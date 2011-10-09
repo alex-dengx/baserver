@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
     // Check command line arguments.
     if (argc != 11)
     {
-      std::cerr << "Usage: proxy_server <address_src> <port_src> <address_dst> <port_dst> <io_pool_size> <thread_pool_size> <preallocated_handler_number> <data_buffer_size> <timeout_seconds> <closed_wait>\n";
+      std::cerr << "Usage: proxy_server <address_src> <port_src> <address_dst> <port_dst> <io_pool_size>  <work_pool_init_size> <work_pool_high_watermark>  <preallocated_handler_number> <data_buffer_size> <timeout_seconds>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    proxy_server 0.0.0.0 1000 0.0.0.0 2000 4 4 500 1024 0 5\n";
+      std::cerr << "    proxy_server 0.0.0.0 1000 0.0.0.0 2000 4 4 16 500 1024 0\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    proxy_server 0::0 1000 0.0.0.0 2000 4 4 500 1024 0 5\n";
+      std::cerr << "    proxy_server 0::0 1000 0.0.0.0 2000 4 4 16 500 1024 0\n";
       return 1;
     }
 
@@ -61,11 +61,11 @@ int main(int argc, char* argv[])
     unsigned short port_src = boost::lexical_cast<unsigned short>(argv[2]);
     unsigned short port_dst = boost::lexical_cast<unsigned short>(argv[4]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[5]);
-    std::size_t thread_pool_size = boost::lexical_cast<std::size_t>(argv[6]);
-    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[7]);
-    std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[8]);
-    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[9]);
-    std::size_t closed_wait = boost::lexical_cast<std::size_t>(argv[10]);
+    std::size_t work_pool_init_size = boost::lexical_cast<std::size_t>(argv[6]);
+    std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[7]);
+    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[8]);
+    std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[9]);
+    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[10]);
 
     typedef bas::server<proxy::server_work, proxy::server_work_allocator> server;
     typedef bas::service_handler_pool<proxy::server_work, proxy::server_work_allocator> server_handler_pool;
@@ -74,20 +74,19 @@ int main(int argc, char* argv[])
     server s(argv[1],
         port_src,
         io_pool_size,
-        thread_pool_size,
+        work_pool_init_size,
+        work_pool_high_watermark,
         new server_handler_pool(new proxy::server_work_allocator(argv[3],
                 port_dst,
                 new client_handler_pool(new proxy::client_work_allocator(),
                     preallocated_handler_number,
                     read_buffer_size,
                     0,
-                    timeout_seconds,
-                    closed_wait)),
+                    timeout_seconds)),
             preallocated_handler_number,
             read_buffer_size,
             0,
-            timeout_seconds,
-            closed_wait));
+            timeout_seconds));
 
     // Set console control handler to allow server to be stopped.
     console_ctrl_function = boost::bind(&server::stop, &s);

@@ -35,22 +35,22 @@ int main(int argc, char* argv[])
     // Check command line arguments.
     if (argc != 9)
     {
-      std::cerr << "Usage: ssl_server <address> <port> <io_pool_size> <thread_pool_size> <preallocated_handler_number> <data_buffer_size> <timeout_seconds> <closed_wait>\n";
+      std::cerr << "Usage: ssl_server <address> <port> <io_pool_size> <work_pool_init_size> <work_pool_high_watermark> <preallocated_handler_number> <data_buffer_size> <timeout_seconds>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    ssl_server 0.0.0.0 1000 4 4 500 256 0 5\n";
+      std::cerr << "    ssl_server 0.0.0.0 1000 4 4 16 500 256 0\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    ssl_server 0::0 1000 4 4 500 256 0 5\n";
+      std::cerr << "    ssl_server 0::0 1000 4 4 16 500 256 0\n";
       return 1;
     }
 
     // Initialise server.
     unsigned short port = boost::lexical_cast<unsigned short>(argv[2]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[3]);
-    std::size_t thread_pool_size = boost::lexical_cast<std::size_t>(argv[4]);
-    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[5]);
-    std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[6]);
-    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[7]);
-    std::size_t closed_wait = boost::lexical_cast<std::size_t>(argv[8]);
+    std::size_t work_pool_init_size = boost::lexical_cast<std::size_t>(argv[4]);
+    std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[5]);
+    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[6]);
+    std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[7]);
+    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[8]);
 
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
     typedef bas::server<echo::ssl_server_work, echo::ssl_server_work_allocator, ssl_socket> server;
@@ -59,13 +59,13 @@ int main(int argc, char* argv[])
     server s(argv[1],
         port,
         io_pool_size,
-        thread_pool_size,
+        work_pool_init_size,
+        work_pool_high_watermark,
         new server_handler_pool(new echo::ssl_server_work_allocator(),
             preallocated_handler_number,
             read_buffer_size,
             0,
-            timeout_seconds,
-            closed_wait));
+            timeout_seconds));
 
     // Block all signals for background thread.
     sigset_t new_mask;
