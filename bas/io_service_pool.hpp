@@ -22,6 +22,7 @@ namespace bas {
 
 #define BAS_IO_SERVICE_POOL_INIT_SIZE       4
 #define BAS_IO_SERVICE_POOL_HIGH_WATERMARK  32
+#define BAS_IO_SERVICE_POOL_THREAD_LOAD     100
 
 /// A pool of io_service objects.
 class io_service_pool
@@ -30,16 +31,19 @@ class io_service_pool
 public:
   /// Construct the io_service pool.
   explicit io_service_pool(std::size_t pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      std::size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK)
+      std::size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
+      std::size_t pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
     : io_services_(),
       work_(),
       threads_(),
       pool_high_watermark_(pool_high_watermark),
+      pool_thread_load_(pool_thread_load),
       next_io_service_(0),
       block_(false)
   {
     BOOST_ASSERT(pool_init_size != 0);
     BOOST_ASSERT(pool_high_watermark >= pool_init_size);
+    BOOST_ASSERT(pool_thread_load != 0);
 
     // Create io_service pool.
     for (std::size_t i = 0; i < pool_init_size; ++i)
@@ -65,6 +69,12 @@ public:
   std::size_t size()
   {
     return io_services_.size();
+  }
+
+  /// Get the load of each thread.
+  std::size_t get_thread_load()
+  {
+    return pool_thread_load_;
   }
 
   /// Start all io_service objects in nonblock model.
@@ -106,7 +116,9 @@ public:
   /// Get an io_service to use. if need then create one to use.
   boost::asio::io_service& get_io_service(std::size_t load)
   {
-    if ((load > io_services_.size()) && (io_services_.size() < pool_high_watermark_) && !block_)
+    // Calculate the required number of threads.
+    std::size_t threads_number = load / pool_thread_load_;
+    if ((threads_number > io_services_.size()) && (io_services_.size() < pool_high_watermark_) && !block_)
     {
       // Create new io_service and start it.
       io_service_ptr io_service(new boost::asio::io_service);
@@ -183,6 +195,9 @@ private:
 
   /// High water mark of the pool.
   std::size_t pool_high_watermark_;
+
+  /// Carrying the load of each thread.
+  std::size_t pool_thread_load_;
 
   /// The next io_service to use for a connection.
   std::size_t next_io_service_;

@@ -27,7 +27,6 @@ namespace bas {
 #define BAS_HANDLER_POOL_LOW_WATERMARK   0
 #define BAS_HANDLER_POOL_HIGH_WATERMARK  200
 #define BAS_HANDLER_POOL_INCREMENT       10
-#define BAS_HANDLER_POOL_THREAD_LOAD     100
 
 #define BAS_HANDLER_BUFFER_DEFAULT_SIZE  256
 #define BAS_HANDLER_DEFAULT_TIMEOUT      30
@@ -55,10 +54,9 @@ public:
       std::size_t timeout_seconds = BAS_HANDLER_DEFAULT_TIMEOUT,
       std::size_t pool_low_watermark = BAS_HANDLER_POOL_LOW_WATERMARK,
       std::size_t pool_high_watermark = BAS_HANDLER_POOL_HIGH_WATERMARK,
-      std::size_t pool_increment = BAS_HANDLER_POOL_INCREMENT,
-      std::size_t pool_thread_load = BAS_HANDLER_POOL_THREAD_LOAD)
+      std::size_t pool_increment = BAS_HANDLER_POOL_INCREMENT)
     : mutex_(),
-    	service_handlers_(),
+      service_handlers_(),
       work_allocator_(work_allocator),
       read_buffer_size_(read_buffer_size),
       write_buffer_size_(write_buffer_size),
@@ -67,7 +65,6 @@ public:
       pool_low_watermark_(pool_low_watermark),
       pool_high_watermark_(pool_high_watermark),
       pool_increment_(pool_increment),
-      pool_thread_load_(pool_thread_load),
       handler_count_(0),
       closed_(false)
   {
@@ -76,7 +73,6 @@ public:
     BOOST_ASSERT(pool_low_watermark <= pool_init_size);
     BOOST_ASSERT(pool_high_watermark > pool_low_watermark);
     BOOST_ASSERT(pool_increment != 0);
-    BOOST_ASSERT(pool_thread_load != 0);
   }
 
   /// Destruct the pool object.
@@ -124,13 +120,13 @@ public:
   	push_handler(handler_ptr);
   }
 
-  /// Calculate the required number of threads.
+  /// Get the number of active handlers.
   std::size_t  get_load(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
 
-    return ((handler_count_ - service_handlers_.size()) / pool_thread_load_);
+    return (handler_count_ - service_handlers_.size());
   }
 
   /// Get the count of the handlers.
@@ -234,9 +230,6 @@ private:
 
   /// Increase number of the pool.
   std::size_t pool_increment_;
-
-  /// Handler number of one thread could load.
-  std::size_t pool_thread_load_;
 
   /// The maximum size for asynchronous read operation buffer.
   std::size_t read_buffer_size_;
