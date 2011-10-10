@@ -40,7 +40,7 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµ
 4¡¢0.50.0£¬ÓÅ»¯Éè¼Æ£¬Ö÷Òª¸Ä±ä°üÀ¨£º
    *ÓÅ»¯io_service_poolÉè¼Æ£¬Ê¹ÓÃget_io_service(std::size_t load)¿ÉÔÚÖØ¸ºÔØÊ±Ôö¼Ó¹¤×÷Ïß³Ì£»
    *µ÷Õûservice_handler_poolÉè¼Æ£¬¿É¸üºÃµØÊÊÓ¦Á¬½Ó³ØµÄ¶¯Ì¬µ÷Õû£»
-   *¶Ôservice_handlerºÍserver¡¢client×÷ÁËÏàÓ¦µ÷Õû¡£
+   *Ç¿»¯service_handlerÒì²½²Ù×÷»º³åÇø¼ì²é£¬»º³åÇø²»×ãÊ±Ö±½Ó¹Ø±ÕÁ¬½Ó²¢·µ»Ø´íÎóÐÅÏ¢boost::asio::error::no_buffer_space¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£

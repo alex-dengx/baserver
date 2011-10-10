@@ -139,7 +139,13 @@ public:
   /// Caller must be sure that read_buffer().space() > 0.
   void async_read_some()
   {
-    BOOST_ASSERT(read_buffer().space() != 0);
+    //BOOST_ASSERT(read_buffer().space() != 0);
+    if (read_buffer().space() == 0)
+    {
+      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+      return;
+    }
+    
     async_read_some(boost::asio::buffer(read_buffer().data() + read_buffer().size(), read_buffer().space()));
   }
 
@@ -156,7 +162,13 @@ public:
   /// Caller must be sure that length != 0 and length <= read_buffer().space().
   void async_read(std::size_t length)
   {
-    BOOST_ASSERT(length != 0 && length <= read_buffer().space());
+    //BOOST_ASSERT(length != 0 && length <= read_buffer().space());
+    if ((length == 0) || (length > read_buffer().space()))
+    {
+      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+      return;
+    }
+
     async_read(boost::asio::buffer(read_buffer().data() + read_buffer().size(), length));
   }
 
@@ -173,7 +185,13 @@ public:
   /// Caller must be sure that write_buffer().size() > 0.
   void async_write()
   {
-    BOOST_ASSERT(write_buffer().size() != 0);
+    //BOOST_ASSERT(write_buffer().size() != 0);
+    if (write_buffer().size() == 0)
+    {
+      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+      return;
+    }
+
     async_write(boost::asio::buffer(write_buffer().data(), write_buffer().size()));
   }
 
@@ -181,7 +199,13 @@ public:
   /// Caller must be sure that length != 0 and length <= write_buffer().size().
   void async_write(std::size_t length)
   {
-    BOOST_ASSERT(length != 0 && length <= write_buffer().size());
+    //BOOST_ASSERT(length != 0 && length <= write_buffer().size());
+    if ((length == 0) || (length > write_buffer().size()))
+    {
+      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+      return;
+    }
+    
     async_write(boost::asio::buffer(write_buffer().data(), length));
   }
 
