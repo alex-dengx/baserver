@@ -151,7 +151,7 @@ public:
 
   /// Start an asynchronous operation from any thread to read any amount of data to buffers from the socket.
   template<typename Buffers>
-  void async_read_some(Buffers& buffers)
+  void async_read_some(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_type::async_read_some_i<Buffers>,
         shared_from_this(),
@@ -174,7 +174,7 @@ public:
 
   /// Start an asynchronous operation from any thread to read a certain amount of data to buffers from the socket.
   template<typename Buffers>
-  void async_read(Buffers& buffers)
+  void async_read(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_type::async_read_i<Buffers>,
         shared_from_this(),
@@ -211,7 +211,7 @@ public:
 
   /// Start an asynchronous operation from any thread to write buffers to the socket.
   template<typename Buffers>
-  void async_write(Buffers& buffers)
+  void async_write(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_type::async_write_i<Buffers>,
         shared_from_this(),
@@ -319,7 +319,7 @@ private:
 
   /// Start an asynchronous operation from io_service thread to read any amount of data to buffers from the socket.
   template<typename Buffers>
-  void async_read_some_i(Buffers& buffers)
+  void async_read_some_i(const Buffers& buffers)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -334,7 +334,7 @@ private:
 
   /// Start an asynchronous operation from io_service thread to read a certain amount of data to buffers from the socket.
   template<typename Buffers>
-  void async_read_i(Buffers& buffers)
+  void async_read_i(const Buffers& buffers)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -350,7 +350,7 @@ private:
 
   /// Start an asynchronous operation from io_service thread to write buffers to the socket.
   template<typename Buffers>
-  void async_write_i(Buffers& buffers)
+  void async_write_i(const Buffers& buffers)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)

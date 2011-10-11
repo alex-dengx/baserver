@@ -38,6 +38,8 @@ class service_handler_pool
     private boost::noncopyable
 {
 public:
+  using boost::enable_shared_from_this<service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> >::shared_from_this;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
   typedef boost::shared_ptr<service_handler_type> service_handler_ptr;
