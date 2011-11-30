@@ -60,6 +60,9 @@ public:
   /// Destruct the client object.
    ~client()
   {
+    // Release preallocated handler in the pool.
+    service_handler_pool_->close();
+
     // Destroy service_handler pool.
     service_handler_pool_.reset();
   }

@@ -65,6 +65,10 @@ public:
   {
     // Stop the server's io_service loop.
     stop();
+
+    // Release preallocated handler in the pool.
+    service_handler_pool_->close();
+
     // Destroy service_handler pool.
     service_handler_pool_.reset();
   }

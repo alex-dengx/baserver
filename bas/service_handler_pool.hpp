@@ -80,16 +80,23 @@ public:
   /// Destruct the pool object.
   ~service_handler_pool()
   {
-    clear();
-
     work_allocator_.reset();
   }
 
-  /// Create preallocated handler to the pool. because shared_from_this() can't use in the constructor.
+  /// Create preallocated handler to the pool.
+  /// Note: shared_from_this() can't be used in the constructor.
   void init(void)
   {
     // Create preallocated handler to the pool.
     create_handler(pool_init_size_);
+  }
+
+  /// Release preallocated handler in the pool.
+  /// Note: close() can't be used in the destructor.
+  void close(void)
+  {
+    // Release preallocated handler in the pool.
+    clear();
   }
 
   /// Get an service_handler to use.
@@ -143,12 +150,13 @@ public:
 private:
   
   /// Get the allocator for work.
-  work_allocator_type& work_allocator()
+  work_allocator_type& work_allocator(void)
   {
     return *work_allocator_;
   }
 
-  void clear()
+  /// Release preallocated handler in the pool.
+  void clear(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -162,7 +170,7 @@ private:
   }
   
   /// Make a new handler.
-  service_handler_type* make_handler()
+  service_handler_type* make_handler(void)
   {
     return new service_handler_type(work_allocator().make_handler(),
         read_buffer_size_,
