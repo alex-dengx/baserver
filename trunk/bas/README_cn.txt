@@ -37,10 +37,11 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµ
    *Ôö¼Óconnect½Ó¿Ú£¬ÔÊÐíÓÃ×÷´úÀíÊ±ÁÙÊ±Ö¸¶¨Á¬½Óhost£»
 3¡¢0.30.6£¬on_write½Ó¿Úµ÷ÕûÎªÓëon_readÀàËÆ£¬Ôö¼Ó³É¹¦Ð´Êý¾Ý³¤¶È²ÎÊý£»
 4¡¢0.40.0£¬µ÷Õû¸¸/×ÓÁ¬½ÓµÄÊµÏÖ·½Ê½£¬ÓÉÓ¦ÓÃ³ÌÐò¸ºÔð¹ÜÀí¸¸¡¢×ÓÁ¬½ÓÖ®¼äµÄËùÓÐ¶¯×÷£»
-4¡¢0.50.0£¬ÓÅ»¯Éè¼Æ£¬Ö÷Òª¸Ä±ä°üÀ¨£º
+5¡¢0.50.0£¬ÓÅ»¯Éè¼Æ£¬Ö÷Òª¸Ä±ä°üÀ¨£º
    *ÓÅ»¯io_service_poolÉè¼Æ£¬Ê¹ÓÃget_io_service(std::size_t load)¿ÉÔÚÖØ¸ºÔØÊ±Ôö¼Ó¹¤×÷Ïß³Ì£»
    *µ÷Õûservice_handler_poolÉè¼Æ£¬¿É¸üºÃµØÊÊÓ¦Á¬½Ó³ØµÄ¶¯Ì¬µ÷Õû£»
-   *Ç¿»¯service_handlerÒì²½²Ù×÷»º³åÇø¼ì²é£¬»º³åÇø²»×ãÊ±Ö±½Ó¹Ø±ÕÁ¬½Ó²¢·µ»Ø´íÎóÐÅÏ¢boost::asio::error::no_buffer_space¡£
+   *Ç¿»¯service_handlerÒì²½²Ù×÷»º³åÇø¼ì²é£¬»º³åÇø²»×ãÊ±Ö±½Ó¹Ø±ÕÁ¬½Ó²¢·µ»Ø´íÎóÐÅÏ¢boost::asio::error::no_buffer_space£»
+6¡¢0.51.0£¬Ó¦ÓÃ»§ÒªÇó£¬³¬Ê±´¦Àíµ÷ÕûÎªÕû¸öÁ¬½Ó»á»°³¬Ê±ºÍµ¥¸öI/O²Ù×÷³¬Ê±·Ö±ð½øÐÐ´¦Àí£¬¿ØÖÆÂß¼­¸üÁé»î¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£

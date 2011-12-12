@@ -76,16 +76,18 @@ public:
   /// Construct a service_handler object.
   explicit service_handler(work_handler_type* work_handler,
       std::size_t read_buffer_size,
-      std::size_t write_buffer_size,
-      std::size_t timeout_seconds)
+      std::size_t write_buffer_size = 0,
+      std::size_t session_timeout = 0,
+      std::size_t io_timeout = 0)
     : work_handler_(work_handler),
       socket_(),
-      timer_(),
+      session_timer_(),
+      io_timer_(),
       io_service_(0),
       work_service_(0),
-      timer_count_(0),
       stopped_(true),
-      timeout_seconds_(timeout_seconds),
+      session_timeout_(session_timeout),
+      io_timeout_(io_timeout),
       read_buffer_(read_buffer_size),
       write_buffer_(write_buffer_size)
   {
@@ -265,7 +267,11 @@ private:
     stopped_ = false;
 
     socket_.reset(work_allocator.make_socket(io_service));
-    timer_.reset(new boost::asio::deadline_timer(io_service));
+
+    if (session_timeout_ != 0)
+      session_timer_.reset(new boost::asio::deadline_timer(io_service));
+    if (io_timeout_ != 0)
+      io_timer_.reset(new boost::asio::deadline_timer(io_service));
 
     io_service_ = &io_service;
     work_service_ = &work_service;
@@ -284,13 +290,10 @@ private:
   void connect(boost::asio::ip::tcp::endpoint& endpoint)
   {
     BOOST_ASSERT(socket_.get() != 0);
-    BOOST_ASSERT(timer_.get() != 0);
     BOOST_ASSERT(work_service_ != 0);
 
-    // Set timer for connection timeout.
-    // If reconnect, timer has been setted, don't set again.
-    if (timer_count_ == 0)
-      set_expiry(timeout_seconds_);
+    // Set timer for session timeout.
+    set_session_expiry();
 
     socket().lowest_layer().async_connect(endpoint,
         boost::bind(&service_handler_type::handle_connect,
@@ -303,12 +306,11 @@ private:
   void start()
   {
     BOOST_ASSERT(socket_.get() != 0);
-    BOOST_ASSERT(timer_.get() != 0);
     BOOST_ASSERT(work_service_ != 0);
 
-    // If start from connect, timer has been setted, don't set again.
-    if (timer_count_ == 0)
-      set_expiry(timeout_seconds_);
+    // If start from connect, timer has been setted, set it again.
+    // Set timer for session timeout.
+    set_session_expiry();
 
     // Post to work_service for executing do_open.
     work_service().post(boost::bind(&service_handler_type::do_open,
@@ -325,6 +327,9 @@ private:
     if (stopped_)
       return;
 
+    // Set timer for io operation timeout.
+    set_io_expiry();
+
     socket().async_read_some(buffers,
         boost::bind(&service_handler_type::handle_read,
             shared_from_this(),
@@ -339,6 +344,9 @@ private:
     // The handler has been stopped, do nothing.
     if (stopped_)
       return;
+
+    // Set timer for io operation timeout.
+    set_io_expiry();
 
     boost::asio::async_read(socket(),
         buffers,
@@ -356,6 +364,9 @@ private:
     if (stopped_)
       return;
 
+    // Set timer for io operation timeout.
+    set_io_expiry();
+
     boost::asio::async_write(socket(),
         buffers,
         boost::bind(&service_handler_type::handle_write,
@@ -364,19 +375,42 @@ private:
             boost::asio::placeholders::bytes_transferred));
   }
 
-  /// Set timer for connection.
-  void set_expiry(std::size_t timeout_seconds)
+  /// Set timer for session timeout.
+  void set_session_expiry(void)
   {
-    if (timeout_seconds == 0)
+    if ((session_timeout_ == 0) || (session_timer_.get() == 0))
       return;
 
-    BOOST_ASSERT(timer_.get() != 0);
-
-    ++timer_count_;
-    timer_->expires_from_now(boost::posix_time::seconds(timeout_seconds));
-    timer_->async_wait(boost::bind(&service_handler_type::handle_timeout,
+    session_timer_->expires_from_now(boost::posix_time::seconds(session_timeout_));
+    session_timer_->async_wait(boost::bind(&service_handler_type::handle_timeout,
         shared_from_this(),
         boost::asio::placeholders::error));
+  }
+
+  /// Cancel timer for session timeout.
+  void cancel_session_expiry(void)
+  {
+    if (session_timer_.get() != 0)
+      session_timer_->cancel();
+  }
+
+  /// Set timer for io operation timeout.
+  void set_io_expiry(void)
+  {
+    if ((io_timeout_ == 0) || (io_timer_.get() == 0))
+      return;
+
+    io_timer_->expires_from_now(boost::posix_time::seconds(io_timeout_));
+    io_timer_->async_wait(boost::bind(&service_handler_type::handle_timeout,
+        shared_from_this(),
+        boost::asio::placeholders::error));
+  }
+
+  /// Cancel timer for io operation timeout.
+  void cancel_io_expiry(void)
+  {
+    if (io_timer_.get() != 0)
+      io_timer_->cancel();
   }
 
   /// Handle completion of a connect operation in io_service thread.
@@ -405,6 +439,9 @@ private:
     if (stopped_)
       return;
 
+    // Cancel timer for io operation timeout, even if expired.
+    cancel_io_expiry();
+
     if (!e)
     {
       // Post to work_service for executing do_read.
@@ -427,6 +464,9 @@ private:
     if (stopped_)
       return;
 
+    // Cancel timer for io operation timeout, even if expired.
+    cancel_io_expiry();
+
     if (!e)
     {
       // Post to work_service for executing do_write.
@@ -444,8 +484,6 @@ private:
   /// Handle timeout of whole operation in io_service thread.
   void handle_timeout(const boost::system::error_code& e)
   {
-    --timer_count_;
-
     // The handler has been stopped or timer has been cancelled, do nothing.
     if (stopped_ || e == boost::asio::error::operation_aborted)
       return;
@@ -476,8 +514,8 @@ private:
 
       // Timer has not been expired, or expired but not dispatched,
       // cancel it even if expired.
-      if (timer_count_ != 0)
-        timer_->cancel();
+      cancel_session_expiry();
+      cancel_io_expiry();
 
       // Post to work_service to executing do_close.
       work_service().post(boost::bind(&service_handler_type::do_close,
@@ -571,7 +609,8 @@ private:
     // Call on_close function of the work handler.
     work_handler_->on_close(*this, e);
 
-    timer_.reset();
+    session_timer_.reset();
+    io_timer_.reset();
 
     // Leave socket to destroy delay for finishing uncompleted SSL operations.
     // Leave io_service_/work_service_ for finishing uncompleted operations.
@@ -588,8 +627,17 @@ private:
   /// Socket for the service_handler.
   socket_ptr socket_;
 
-  /// Timer for timeout operation.
-  timer_ptr timer_;
+  /// Timer for session timeout.
+  timer_ptr session_timer_;
+
+  /// The expiry seconds of session.
+  std::size_t session_timeout_;
+
+  /// Timer for io operation timeout.
+  timer_ptr io_timer_;
+
+  /// The expiry seconds of io operation.
+  std::size_t io_timeout_;
 
   /// The io_service for for asynchronous operations.
   boost::asio::io_service* io_service_;
@@ -597,14 +645,8 @@ private:
   /// The io_service for for executing synchronous works.
   boost::asio::io_service* work_service_;
 
-  /// Count of waiting timer.
-  std::size_t timer_count_;
-
   // Flag to indicate that the handler has been stopped and can not do synchronous operations.
   bool stopped_;
-
-  /// The expiry seconds of connection.
-  std::size_t timeout_seconds_;
 
   /// Buffer for incoming data.
   io_buffer read_buffer_;

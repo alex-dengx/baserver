@@ -53,7 +53,8 @@ public:
       std::size_t pool_init_size = BAS_HANDLER_POOL_INIT_SIZE,
       std::size_t read_buffer_size = BAS_HANDLER_BUFFER_DEFAULT_SIZE,
       std::size_t write_buffer_size = 0,
-      std::size_t timeout_seconds = BAS_HANDLER_DEFAULT_TIMEOUT,
+      std::size_t session_timeout = BAS_HANDLER_DEFAULT_TIMEOUT,
+      std::size_t io_timeout = 0,
       std::size_t pool_low_watermark = BAS_HANDLER_POOL_LOW_WATERMARK,
       std::size_t pool_high_watermark = BAS_HANDLER_POOL_HIGH_WATERMARK,
       std::size_t pool_increment = BAS_HANDLER_POOL_INCREMENT)
@@ -62,7 +63,8 @@ public:
       work_allocator_(work_allocator),
       read_buffer_size_(read_buffer_size),
       write_buffer_size_(write_buffer_size),
-      timeout_seconds_(timeout_seconds),
+      session_timeout_(session_timeout),
+      io_timeout_(io_timeout),
       pool_init_size_(pool_init_size),
       pool_low_watermark_(pool_low_watermark),
       pool_high_watermark_(pool_high_watermark),
@@ -175,7 +177,8 @@ private:
     return new service_handler_type(work_allocator().make_handler(),
         read_buffer_size_,
         write_buffer_size_,
-        timeout_seconds_);
+        session_timeout_,
+        io_timeout_);
   }
 
   /// Push a handler into the pool.
@@ -247,8 +250,11 @@ private:
   /// The maximum size for asynchronous write operation buffer.
   std::size_t write_buffer_size_;
 
-  /// The expiry seconds of connection.
-  std::size_t timeout_seconds_;
+  /// The expiry seconds of session.
+  std::size_t session_timeout_;
+
+  /// The expiry seconds of io operation.
+  std::size_t io_timeout_;
 };
 
 } // namespace bas
