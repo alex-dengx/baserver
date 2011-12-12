@@ -11,6 +11,7 @@
 #ifndef BAS_ECHO_SERVER_WORK_HPP
 #define BAS_ECHO_SERVER_WORK_HPP
 
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <bas/service_handler.hpp>
 
 #include <iostream>
@@ -39,6 +40,7 @@ public:
     //std::cout << "client ip is " << handler.socket().remote_endpoint().address().to_string() << "\n";
     //std::cout.flush();
 
+    time_start = boost::posix_time::microsec_clock::universal_time();
     handler.async_read_some();
   }
 
@@ -80,6 +82,14 @@ public:
 
       // Other error.
       case boost::asio::error::timed_out:
+      	{
+          boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
+          std::cout << "server error " << e << " message " << e.message() << "\n";
+          std::cout << "time is " << time_long.total_milliseconds() << " ms.\n";
+          std::cout.flush();
+        }
+        break;
+      	
       case boost::asio::error::no_buffer_space:
       default:
         std::cout << "server error " << e << " message " << e.message() << "\n";
@@ -95,6 +105,9 @@ public:
   void on_child(server_handler_type& handler, const bas::event event)
   {
   }
+
+private:
+  boost::posix_time::ptime time_start;
 };
 
 } // namespace echo

@@ -13,12 +13,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssl_server", "ssl\ssl_serve
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssl_client", "ssl\ssl_client.vcxproj", "{3E72E3DC-D5AD-4973-930A-D26BD05F4FCD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hash", "echo\hash.vcxproj", "{40980730-680D-47DE-B468-71845070A65E}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctrl_gate", "ctrl\ctrl_gate.vcxproj", "{D672FD52-5314-4F4C-A166-ABE5E50723CB}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctrl_client", "ctrl\ctrl_client.vcxproj", "{B60E4ACA-1CB0-4870-9556-2A2C765FDB3F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

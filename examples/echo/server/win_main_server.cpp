@@ -45,13 +45,13 @@ int main(int argc, char* argv[])
   try
   {
     // Check command line arguments.
-    if (argc != 9)
+    if (argc != 10)
     {
-      std::cerr << "Usage: echo_server <address> <port> <io_pool_size> <work_pool_init_size> <work_pool_high_watermark> <preallocated_handler_number> <data_buffer_size> <timeout_seconds>\n";
+      std::cerr << "Usage: echo_server <address> <port> <io_pool_size> <work_pool_init_size> <work_pool_high_watermark> <preallocated_handler_number> <data_buffer_size> <session_timeout> <io_timeout>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    echo_server 0.0.0.0 1000 4 4 16 200 256 0\n";
+      std::cerr << "    echo_server 0.0.0.0 1000 4 4 16 200 256 0 0\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    echo_server 0::0 1000 4 4 16 200 256 0\n";
+      std::cerr << "    echo_server 0::0 1000 4 4 16 200 256 0 0\n";
       return 1;
     }
 
@@ -62,21 +62,23 @@ int main(int argc, char* argv[])
     std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[5]);
     std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[6]);
     std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[7]);
-    std::size_t timeout_seconds = boost::lexical_cast<std::size_t>(argv[8]);
+    std::size_t session_timeout = boost::lexical_cast<std::size_t>(argv[8]);
+    std::size_t io_timeout = boost::lexical_cast<std::size_t>(argv[9]);
 
     typedef bas::server<echo::server_work, echo::server_work_allocator> server;
-    typedef bas::service_handler_pool<echo::server_work, echo::server_work_allocator> server_handler_pool;
+    typedef bas::service_handler_pool<echo::server_work, echo::server_work_allocator> service_handler_pool_type;
 
     server s(argv[1],
         port,
         io_pool_size,
         work_pool_init_size,
         work_pool_high_watermark,
-        new server_handler_pool(new echo::server_work_allocator(),
+        new service_handler_pool_type(new echo::server_work_allocator(),
             preallocated_handler_number,
             read_buffer_size,
             0,
-            timeout_seconds));
+            session_timeout,
+            io_timeout));
 
     // Set console control handler to allow server to be stopped.
     console_ctrl_function = boost::bind(&server::stop, &s);
