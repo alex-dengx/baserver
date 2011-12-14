@@ -262,8 +262,6 @@ private:
       boost::asio::io_service& work_service,
       Work_Allocator& work_allocator)
   {
-    BOOST_ASSERT(timer_count_ == 0);
-
     stopped_ = false;
 
     socket_.reset(work_allocator.make_socket(io_service));
