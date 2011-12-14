@@ -61,21 +61,24 @@ public:
 
     io_service_pool_.stop();
     work_service_pool_.stop();
-/*
-    work_service_pool_.start();
-    io_service_pool_.start();
-    io_service_pool_.stop();
-    work_service_pool_.stop();
-*/
+
+    for (std::size_t i = 0; i < 5; ++i)
+    {
+      work_service_pool_.start();
+      io_service_pool_.start();
+      io_service_pool_.stop();
+      work_service_pool_.stop();
+    }
+
     boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.\n";
     std::cout.flush();
 
-/*    boost::asio::io_service io_service;
+    boost::asio::io_service io_service;
     boost::asio::deadline_timer timer(io_service);
-    timer.expires_from_now(boost::posix_time::seconds(3));
+    timer.expires_from_now(boost::posix_time::seconds(30));
     timer.wait();
-*/
+
   }
 
 private:
