@@ -43,7 +43,6 @@ public:
     handler.async_write(boost::asio::buffer(echo_message, rand() % echo_message.size() + 1));
 */
     handler.async_write(boost::asio::buffer(echo_message));
-
   }
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)
