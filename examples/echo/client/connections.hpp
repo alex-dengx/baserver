@@ -73,12 +73,12 @@ public:
     boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.\n";
     std::cout.flush();
-
+/*
     boost::asio::io_service io_service;
     boost::asio::deadline_timer timer(io_service);
-    timer.expires_from_now(boost::posix_time::seconds(30));
+    timer.expires_from_now(boost::posix_time::seconds(3));
     timer.wait();
-
+*/
   }
 
 private:
