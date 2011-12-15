@@ -62,6 +62,8 @@ public:
       // Operation successfully completed.
       case 0:
       case boost::asio::error::eof:
+        std::cout << "connection is closed normally.\n";
+        std::cout.flush();
         break;
 
       // Operation timed out.

@@ -23,8 +23,6 @@
 
 namespace bas {
 
-#define BAS_GRACEFUL_CLOSED_WAIT_LOOP  5
-
 /// The top-level class of the server.
 template<typename Work_Handler, typename Work_Allocator, typename Socket_Service = boost::asio::ip::tcp::socket>
 class server
@@ -101,8 +99,8 @@ public:
     // Stop work_service_pool.
     work_service_pool_.stop();
 
-    // For gracefully close as possible, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
-    for (std::size_t i = 0; i < BAS_GRACEFUL_CLOSED_WAIT_LOOP; ++i)
+    // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
+    while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
     {
       work_service_pool_.start();
       io_service_pool_.start();

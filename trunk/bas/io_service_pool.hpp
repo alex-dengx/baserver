@@ -14,6 +14,8 @@
 #include <boost/assert.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/detail/mutex.hpp>
+#include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -33,12 +35,14 @@ public:
   explicit io_service_pool(std::size_t pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       std::size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
       std::size_t pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
-    : io_services_(),
+    : mutex_(),
+      io_services_(),
       work_(),
       threads_(),
       pool_high_watermark_(pool_high_watermark),
       pool_thread_load_(pool_thread_load),
       next_io_service_(0),
+      is_free_(true),
       block_(false)
   {
     BOOST_ASSERT(pool_init_size != 0);
@@ -75,6 +79,15 @@ public:
   std::size_t get_thread_load()
   {
     return pool_thread_load_;
+  }
+
+  /// Get work status of the pool.
+  bool  is_free(void)
+  {
+    // Need lock in multiple thread model.
+    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+
+    return is_free_;
   }
 
   /// Start all io_service objects in nonblock model.
@@ -149,6 +162,18 @@ private:
     threads_.clear();
   }
 
+  void run_service(io_service_ptr io_service)
+  {
+    if ((io_service->run() != 0) && is_free_)
+    {
+      // Need lock in multiple thread model.
+      boost::asio::detail::mutex::scoped_lock lock(mutex_);
+
+      // Some handlers has been executed, set to false.
+      is_free_ = false;
+    }
+  }
+
   /// Start an io_service.
   void start_one(io_service_ptr io_service)
   {
@@ -162,7 +187,8 @@ private:
 
     // Create a thread to run the io_service.
     thread_ptr thread(new boost::thread(
-        boost::bind(&boost::asio::io_service::run, io_service)));
+    	  boost::bind(&io_service_pool::run_service, this, io_service)));
+
     threads_.push_back(thread);
   }
 
@@ -172,17 +198,25 @@ private:
     if (threads_.size() != 0)
       return;
 
+    // The pool has not do anything now, reset to true.
+    is_free_ = true;
+
     // Start all io_service.
     for (std::size_t i = 0; i < io_services_.size(); ++i)
       start_one(io_services_[i]);
-  
+
     block_ = block;
-  
+
     if (block)
       wait();
   }
 
 private:
+  /// Mutex to protect access to internal data.
+  boost::asio::detail::mutex mutex_;
+
+  /// Work status of the pool.
+  bool is_free_;
 
   /// The pool of io_services.
   std::vector<io_service_ptr> io_services_;
