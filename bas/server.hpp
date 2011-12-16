@@ -71,8 +71,14 @@ public:
     service_handler_pool_.reset();
   }
 
-  /// Run the server's io_service loop.
+  /// Run the server's io_service loop and stop with gracefully mode.
   void run()
+  {
+    run(false);
+  }
+
+  /// Run the server's io_service loop.
+  void run(bool force_stop)
   {
     if (started_)
       return;
@@ -94,18 +100,28 @@ public:
     // Start accept_service_pool with block to perform asynchronous accept operations.
     accept_service_pool_.run();
 
-    // Stop io_service_pool.
-    io_service_pool_.stop();
-    // Stop work_service_pool.
-    work_service_pool_.stop();
-
-    // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
-    while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
+    if (force_stop)
     {
-      work_service_pool_.start();
-      io_service_pool_.start();
+      // Stop io_service_pool with force mode.
+      io_service_pool_.stop(force_stop);
+      // Stop work_service_pool with force mode.
+      work_service_pool_.stop(force_stop);
+    }
+    else
+    {
+      // Stop io_service_pool.
       io_service_pool_.stop();
+      // Stop work_service_pool.
       work_service_pool_.stop();
+
+      // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
+      while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
+      {
+        work_service_pool_.start();
+        io_service_pool_.start();
+        io_service_pool_.stop();
+        work_service_pool_.stop();
+      }
     }
 
     started_ = false;
