@@ -102,8 +102,15 @@ public:
     start(true);
   }
 
-  /// Stop all io_service objects in the pool.
+  /// Stop all io_service objects in the pool with gracefully mode,
+  /// All work will be finished and there are no more handlers to be dispatched.
   void stop()
+  {
+  	stop(false);
+  }
+
+  /// Stop all io_service objects in the pool.
+  void stop(bool force)
   {
     // Allow all operations and handlers to be finished normally,
     // the work object may be explicitly destroyed.
@@ -113,6 +120,11 @@ public:
       work_[i].reset();
     work_.clear();
 
+    // If in force mode, maybe some handlers cannot be dispatched.
+    if (force)
+      force_stop();
+
+    // If in block mode, wait for all threads in the pool to exit.
     if (!block_)
       wait();
   }
@@ -162,8 +174,10 @@ private:
     threads_.clear();
   }
 
+  /// Run an io_service.
   void run_service(io_service_ptr io_service)
   {
+    // Run the io_service and check executed handler number is zero or not.
     if ((io_service->run() != 0) && is_free_)
     {
       // Need lock in multiple thread model.
@@ -187,7 +201,7 @@ private:
 
     // Create a thread to run the io_service.
     thread_ptr thread(new boost::thread(
-    	  boost::bind(&io_service_pool::run_service, this, io_service)));
+        boost::bind(&io_service_pool::run_service, this, io_service)));
 
     threads_.push_back(thread);
   }
@@ -207,8 +221,17 @@ private:
 
     block_ = block;
 
+    // If in block mode, wait for all threads in the pool to exit.
     if (block)
       wait();
+  }
+
+  /// Force stop all io_service objects in the pool.
+  void force_stop(void)
+  {
+    // Force stop all io_service, maybe some handlers cannot be dispatched.
+    for (std::size_t i = 0; i < io_services_.size(); ++i)
+      io_services_[i]->stop();
   }
 
 private:

@@ -47,8 +47,12 @@ public:
   {
     BOOST_ASSERT(connection_number != 0);
   }
+  void run(void)
+  {
+    run(false);
+  }
 
-  void run()
+  void run(bool force_stop)
   {
     boost::posix_time::ptime time_start = boost::posix_time::microsec_clock::universal_time();
     std::cout << "Creating " << connection_number_ << " connections.\n";
@@ -59,16 +63,23 @@ public:
     for (std::size_t i = 0; i < connection_number_; ++i)
       client_.connect(io_service_pool_.get_io_service(), work_service_pool_.get_io_service());
 
-    io_service_pool_.stop();
-    work_service_pool_.stop();
-
-//    for (std::size_t i = 0; i < 5; ++i)
-    while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
+    if (force_stop)
     {
-      work_service_pool_.start();
-      io_service_pool_.start();
+      io_service_pool_.stop(force_stop);
+      work_service_pool_.stop(force_stop);
+    }
+    else
+    {
       io_service_pool_.stop();
       work_service_pool_.stop();
+
+      while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
+      {
+        work_service_pool_.start();
+        io_service_pool_.start();
+        io_service_pool_.stop();
+        work_service_pool_.stop();
+      }
     }
 
     boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
