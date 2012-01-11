@@ -54,17 +54,17 @@ int main(int argc, char* argv[])
     typedef bas::server<echo::server_work, echo::server_work_allocator> server;
     typedef bas::service_handler_pool<echo::server_work, echo::server_work_allocator> server_handler_pool;
 
-    server s(argv[1],
+    server s(new service_handler_pool_type(new echo::server_work_allocator(),
+                preallocated_handler_number,
+                read_buffer_size,
+                0,
+                session_timeout,
+                io_timeout),
+        argv[1],
         port,
         io_pool_size,
         work_pool_init_size,
-        work_pool_high_watermark,
-        new server_handler_pool(new echo::server_work_allocator(),
-            preallocated_handler_number,
-            read_buffer_size,
-            0,
-            session_timeout,
-            io_timeout));
+        work_pool_high_watermark);
 
     // Block all signals for background thread.
     sigset_t new_mask;

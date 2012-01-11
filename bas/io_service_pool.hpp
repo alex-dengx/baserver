@@ -132,6 +132,10 @@ public:
   /// Get an io_service to use.
   boost::asio::io_service& get_io_service()
   {
+    // Need lock in multiple thread model.
+    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+
+    // Use a round-robin scheme to choose the next io_service to use.
     boost::asio::io_service& io_service = *io_services_[next_io_service_];
     if (++next_io_service_ == io_services_.size())
       next_io_service_ = 0;
@@ -141,6 +145,9 @@ public:
   /// Get an io_service to use. if need then create one to use.
   boost::asio::io_service& get_io_service(std::size_t load)
   {
+    // Need lock in multiple thread model.
+    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+
     // Calculate the required number of threads.
     std::size_t threads_number = load / pool_thread_load_;
     if ((threads_number > io_services_.size()) && (io_services_.size() < pool_high_watermark_) && !block_)
