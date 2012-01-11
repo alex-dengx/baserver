@@ -57,22 +57,22 @@ int main(int argc, char* argv[])
     typedef bas::service_handler_pool<proxy::server_work, proxy::server_work_allocator> server_handler_pool;
     typedef bas::service_handler_pool<proxy::client_work, proxy::client_work_allocator> client_handler_pool;
 
-    server s(argv[1],
+    server s(new server_handler_pool(new proxy::server_work_allocator(argv[3],
+                                         port_dst,
+                                         new client_handler_pool(new proxy::client_work_allocator(),
+                                             preallocated_handler_number,
+                                             read_buffer_size,
+                                             0,
+                                             timeout_seconds)),
+                 preallocated_handler_number,
+                 read_buffer_size,
+                 0,
+                 timeout_seconds),
+        argv[1],
         port_src,
         io_pool_size,
         work_pool_init_size,
-        work_pool_high_watermark,
-        new server_handler_pool(new proxy::server_work_allocator(argv[3],
-                port_dst,
-                new client_handler_pool(new proxy::client_work_allocator(),
-                    preallocated_handler_number,
-                    read_buffer_size,
-                    0,
-                    timeout_seconds)),
-            preallocated_handler_number,
-            read_buffer_size,
-            0,
-            timeout_seconds));
+        work_pool_high_watermark);
 
     // Block all signals for background thread.
     sigset_t new_mask;

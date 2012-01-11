@@ -66,16 +66,16 @@ int main(int argc, char* argv[])
     typedef bas::server<http::server::server_work, http::server::server_work_allocator> server;
     typedef bas::service_handler_pool<http::server::server_work, http::server::server_work_allocator> server_handler_pool;
 
-    server s(argv[1],
+    server s(new server_handler_pool(new http::server::server_work_allocator(argv[8]),
+                preallocated_handler_number,
+                8192,
+                0,
+                timeout_seconds),
+        argv[1],
         port,
         io_pool_size,
         work_pool_init_size,
-        work_pool_high_watermark,
-        new server_handler_pool(new http::server::server_work_allocator(argv[8]),
-            preallocated_handler_number,
-            8192,
-            0,
-            timeout_seconds));
+        work_pool_high_watermark);
 
     // Set console control handler to allow server to be stopped.
     console_ctrl_function = boost::bind(&server::stop, &s);
