@@ -46,7 +46,7 @@ public:
       std::size_t work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
       std::size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
     : service_handler_pool_(service_handler_pool),
-    	acceptor_service_pool_(1),
+      acceptor_service_pool_(1),
       io_service_pool_(io_pool_size),
       work_service_pool_(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load),
       acceptor_(acceptor_service_pool_.get_io_service()),
