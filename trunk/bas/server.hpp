@@ -23,6 +23,8 @@
 
 namespace bas {
 
+#define BAS_ACCEPT_QUEUE_LENGTH  250
+
 /// The top-level class of the server.
 template<typename Work_Handler, typename Work_Allocator, typename Socket_Service = boost::asio::ip::tcp::socket>
 class server
@@ -44,16 +46,19 @@ public:
       std::size_t io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       std::size_t work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       std::size_t work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
-      std::size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
+      std::size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
+      std::size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
       acceptor_service_pool_(1),
       io_service_pool_(io_pool_size),
       work_service_pool_(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load),
       acceptor_(acceptor_service_pool_.get_io_service()),
       endpoint_(boost::asio::ip::address::from_string(address), port),
+      accept_queue_length_(accept_queue_length),
       started_(false)
   {
     BOOST_ASSERT(service_handler_pool != 0);
+    BOOST_ASSERT(accept_queue_length != 0);
 
     // Create preallocated handlers of the pool.
     service_handler_pool->init();
@@ -90,8 +95,9 @@ public:
     acceptor_.bind(endpoint_);
     acceptor_.listen();
   
-    // Accept new connection.
-    accept_one();
+    // Accept new connections.
+    for (std::size_t i = 0; i < accept_queue_length_; ++i)
+      accept_one();
 
     // Start work_service_pool with nonblock to perform synchronous works.
     work_service_pool_.start();
@@ -173,7 +179,15 @@ private:
       accept_one();
     }
     else
-      handler->close(e);
+    {
+      if (e == boost::asio::error::operation_aborted)
+      {
+        // The acceptor has been normally stopped.
+        handler->close();
+      }
+      else
+        handler->close(e);
+    }
   }
 
 private:
@@ -195,7 +209,10 @@ private:
   /// The server endpoint.
   boost::asio::ip::tcp::endpoint endpoint_;
 
-  // Flag to indicate that the server is started or not.
+  /// The queue length for async_accept.
+  std::size_t accept_queue_length_;
+
+  /// Flag to indicate that the server is started or not.
   bool started_;
 };
 
