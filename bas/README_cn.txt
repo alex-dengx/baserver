@@ -42,7 +42,8 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµ
    *µ÷Õûservice_handler_poolÉè¼Æ£¬¿É¸üºÃµØÊÊÓ¦Á¬½Ó³ØµÄ¶¯Ì¬µ÷Õû£»
    *Ç¿»¯service_handlerÒì²½²Ù×÷»º³åÇø¼ì²é£¬»º³åÇø²»×ãÊ±Ö±½Ó¹Ø±ÕÁ¬½Ó²¢·µ»Ø´íÎóÐÅÏ¢boost::asio::error::no_buffer_space£»
 6¡¢0.51.0£¬Ó¦ÓÃ»§ÒªÇó£¬³¬Ê±´¦Àíµ÷ÕûÎªÕû¸öÁ¬½Ó»á»°³¬Ê±ºÍµ¥¸öI/O²Ù×÷³¬Ê±·Ö±ð½øÐÐ´¦Àí£¬¿ØÖÆÂß¼­¸üÁé»î£»
-7¡¢0.52.0£¬ÓÅ»¯serverÉè¼Æ£¬ÎªÃ¿¸öCPUÄÚºË·ÖÅäÒ»¸öacceptor£¬Ìá¸ßSMP»·¾³ÏÂµÄÁ¬½ÓÏìÓ¦ËÙ¶È¡£
+7¡¢0.52.0£¬µ÷Õûserver½Ó¿Ú£¬Ôö¼ÓÊäÈë²ÎÊý£»
+8¡¢0.53.0£¬ÓÅ»¯serverÉè¼Æ£¬Í¶µÝ¶à¸öasync_acceptÌá¸ßÁ¬½ÓÐ§ÂÊ£¬ÓÅ»¯Á¬½ÓÖÐÖ¹´¦Àí¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£

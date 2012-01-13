@@ -119,7 +119,7 @@ public:
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
 
-  	// If the pool has exceed high water mark or been closed, delete this handler.
+    // If the pool has exceed high water mark or been closed, delete this handler.
     if (closed_ || (service_handlers_.size() >= pool_high_watermark_))
     {
       delete handler_ptr;
@@ -127,8 +127,8 @@ public:
       return;
     }
 
-  	// Push this handler into the pool.
-  	push_handler(handler_ptr);
+    // Push this handler into the pool.
+    push_handler(handler_ptr);
   }
 
   /// Get the number of active handlers.
