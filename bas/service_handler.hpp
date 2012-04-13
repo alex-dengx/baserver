@@ -77,8 +77,8 @@ public:
   explicit service_handler(work_handler_type* work_handler,
       std::size_t read_buffer_size,
       std::size_t write_buffer_size = 0,
-      std::size_t session_timeout = 0,
-      std::size_t io_timeout = 0)
+      unsigned int session_timeout = 0,
+      unsigned int io_timeout = 0)
     : work_handler_(work_handler),
       socket_(),
       session_timer_(),
@@ -629,13 +629,13 @@ private:
   timer_ptr session_timer_;
 
   /// The expiry seconds of session.
-  std::size_t session_timeout_;
+  unsigned int session_timeout_;
 
   /// Timer for io operation timeout.
   timer_ptr io_timer_;
 
   /// The expiry seconds of io operation.
-  std::size_t io_timeout_;
+  unsigned int io_timeout_;
 
   /// The io_service for for asynchronous operations.
   boost::asio::io_service* io_service_;

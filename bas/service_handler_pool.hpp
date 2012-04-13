@@ -53,8 +53,8 @@ public:
       std::size_t pool_init_size = BAS_HANDLER_POOL_INIT_SIZE,
       std::size_t read_buffer_size = BAS_HANDLER_BUFFER_DEFAULT_SIZE,
       std::size_t write_buffer_size = 0,
-      std::size_t session_timeout = BAS_HANDLER_DEFAULT_TIMEOUT,
-      std::size_t io_timeout = 0,
+      unsigned int session_timeout = BAS_HANDLER_DEFAULT_TIMEOUT,
+      unsigned int io_timeout = 0,
       std::size_t pool_low_watermark = BAS_HANDLER_POOL_LOW_WATERMARK,
       std::size_t pool_high_watermark = BAS_HANDLER_POOL_HIGH_WATERMARK,
       std::size_t pool_increment = BAS_HANDLER_POOL_INCREMENT)
@@ -91,6 +91,8 @@ public:
   {
     // Create preallocated handler to the pool.
     create_handler(pool_init_size_);
+
+    closed_ = false;
   }
 
   /// Release preallocated handler in the pool.
@@ -110,6 +112,7 @@ public:
 
     // Bind the handler with given io_service and work_service.
     service_handler->bind(io_service, work_service, work_allocator());
+
     return service_handler;
   }
 
@@ -124,6 +127,7 @@ public:
     {
       delete handler_ptr;
       --handler_count_;
+
       return;
     }
 
@@ -132,7 +136,7 @@ public:
   }
 
   /// Get the number of active handlers.
-  std::size_t  get_load(void)
+  std::size_t get_load(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -141,7 +145,7 @@ public:
   }
 
   /// Get the count of the handlers.
-  std::size_t  handler_count(void)
+  std::size_t handler_count(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -162,6 +166,9 @@ private:
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
+    
+    if (closed_)
+      return;
 
     // Set flag
     closed_ = true;
@@ -251,10 +258,10 @@ private:
   std::size_t write_buffer_size_;
 
   /// The expiry seconds of session.
-  std::size_t session_timeout_;
+  unsigned int session_timeout_;
 
   /// The expiry seconds of io operation.
-  std::size_t io_timeout_;
+  unsigned int io_timeout_;
 };
 
 } // namespace bas
