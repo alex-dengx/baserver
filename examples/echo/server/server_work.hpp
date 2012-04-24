@@ -65,6 +65,7 @@ public:
 
   void on_close(server_handler_type& handler, const boost::system::error_code& e)
   {
+
     switch (e.value())
     {
       // Operation successfully completed.
@@ -82,14 +83,12 @@ public:
 
       // Other error.
       case boost::asio::error::timed_out:
-      	{
-          boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
-          std::cout << "server error " << e << " message " << e.message() << "\n";
-          std::cout << "time is " << time_long.total_milliseconds() << " ms.\n";
-          std::cout.flush();
-        }
+        time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
+        std::cout << "server error " << e << " message " << e.message() << "\n";
+        std::cout << "time is " << time_long.total_milliseconds() << " ms.\n";
+        std::cout.flush();
         break;
-      	
+        
       case boost::asio::error::no_buffer_space:
       default:
         std::cout << "server error " << e << " message " << e.message() << "\n";
@@ -108,6 +107,7 @@ public:
 
 private:
   boost::posix_time::ptime time_start;
+  boost::posix_time::time_duration time_long;
 };
 
 } // namespace echo

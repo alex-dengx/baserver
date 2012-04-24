@@ -18,6 +18,8 @@
 namespace echo {
 
 std::string echo_message = "echo server test message.\r\n";
+std::size_t mlen = echo_message.length();
+char *msg = (char *)echo_message.c_str();
 
 class client_work
 {
@@ -47,6 +49,11 @@ public:
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)
   {
+    if (mlen != bytes_transferred || memcmp(handler.read_buffer().data(), msg, mlen) != 0)
+    {
+      std::cout << "Receive data error.\n";
+      std::cout.flush();
+    }
     handler.close();
   }
 
@@ -62,8 +69,8 @@ public:
       // Operation successfully completed.
       case 0:
       case boost::asio::error::eof:
-        std::cout << "connection is closed normally.\n";
-        std::cout.flush();
+        //std::cout << "connection is closed normally.\n";
+        //std::cout.flush();
         break;
 
       // Operation timed out.
