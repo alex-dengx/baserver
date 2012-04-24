@@ -283,24 +283,15 @@ private:
     work_handler_->on_clear(*this);
   }
 
-  /// Start an asynchronous connect.
-  /// Usually the first asynchronous operation, can be call from any thread.
+  /// Start an asynchronous connect, can be call from any thread.
   void connect(boost::asio::ip::tcp::endpoint& endpoint)
   {
-    BOOST_ASSERT(socket_.get() != 0);
-    BOOST_ASSERT(work_service_ != 0);
-
-    // Set timer for session timeout.
-    set_session_expiry();
-
-    socket().lowest_layer().async_connect(endpoint,
-        boost::bind(&service_handler_type::handle_connect,
-            shared_from_this(),
-            boost::asio::placeholders::error));
+    io_service().dispatch(boost::bind(&service_handler_type::connect_i,
+        shared_from_this(),
+        endpoint));
   }
 
-  /// Start the first operation.
-  /// Usually the first asynchronous operation, can be call from any thread.
+  /// Start the first operation, can be call from any thread.
   void start()
   {
     BOOST_ASSERT(socket_.get() != 0);
@@ -316,6 +307,21 @@ private:
   }
 
 private:
+
+  /// Start an asynchronous connect from io_service thread.
+  void connect_i(boost::asio::ip::tcp::endpoint& endpoint)
+  {
+    BOOST_ASSERT(socket_.get() != 0);
+    BOOST_ASSERT(work_service_ != 0);
+
+    // Set timer for session timeout.
+    set_session_expiry();
+
+    socket().lowest_layer().async_connect(endpoint,
+        boost::bind(&service_handler_type::handle_connect,
+            shared_from_this(),
+            boost::asio::placeholders::error));
+  }
 
   /// Start an asynchronous operation from io_service thread to read any amount of data to buffers from the socket.
   template<typename Buffers>
