@@ -55,7 +55,9 @@ public:
       acceptor_(acceptor_service_pool_.get_io_service()),
       endpoint_(boost::asio::ip::address::from_string(address), port),
       accept_queue_length_(accept_queue_length),
-      started_(false)
+      started_(false),
+      block_(false),
+      force_stop_(false)
   {
     BOOST_ASSERT(service_handler_pool != 0);
     BOOST_ASSERT(accept_queue_length != 0);
@@ -76,15 +78,50 @@ public:
     // Destroy service_handler pool.
     service_handler_pool_.reset();
   }
-
-  /// Run the server's io_service loop and stop with gracefully mode.
-  void run()
+  
+  /// Set stop with gracefully mode or force mode.
+  void set_stop_mode(bool force_stop = false)
   {
-    run(false);
+    force_stop_ = force_stop;
   }
 
-  /// Run the server's io_service loop.
-  void run(bool force_stop)
+  /// Start server in nonblock model.
+  void start()
+  {
+    start(false);
+  }
+
+  /// Run server in block model.
+  void run()
+  {
+    start(true);
+  }
+
+  /// Stop the server.
+  void stop()
+  {
+    if (!started_)
+      return;
+
+    // Close the acceptor in the same thread.
+    acceptor_.get_io_service().dispatch(boost::bind(&boost::asio::ip::tcp::acceptor::close,
+        &acceptor_));
+
+    // Stop accept_service_pool from block.
+    acceptor_service_pool_.stop();
+
+    if (!block_)
+    {
+      stop_pool();
+
+      started_ = false;
+    }
+  }
+
+private:
+
+  /// Start server with given mode.
+  void start(bool block)
   {
     if (started_)
       return;
@@ -104,16 +141,37 @@ public:
     // Start io_service_pool with nonblock to perform asynchronous i/o operations.
     io_service_pool_.start();
 
-    started_ = true;
-    // Start accept_service_pool with block to perform asynchronous accept operations.
-    acceptor_service_pool_.run();
+    block_ = block;
 
-    if (force_stop)
+    // Start accept_service_pool with block to perform asynchronous accept operations.
+    if (block)
+    {
+      started_ = true;
+
+      // Start accept_service_pool with block to perform asynchronous accept operations.
+      acceptor_service_pool_.run();
+
+      stop_pool();
+
+      started_ = false;
+    }
+    else
+    {
+      acceptor_service_pool_.start();
+
+      started_ = true;
+    }
+  }
+
+  /// Wait for all io_service_pool to exit.
+  void stop_pool()
+  {
+    if (force_stop_)
     {
       // Stop io_service_pool with force mode.
-      io_service_pool_.stop(force_stop);
+      io_service_pool_.stop(force_stop_);
       // Stop work_service_pool with force mode.
-      work_service_pool_.stop(force_stop);
+      work_service_pool_.stop(force_stop_);
     }
     else
     {
@@ -131,25 +189,7 @@ public:
         work_service_pool_.stop();
       }
     }
-
-    started_ = false;
   }
-
-  /// Stop the server.
-  void stop()
-  {
-    if (!started_)
-      return;
-
-    // Close the acceptor in the same thread.
-    acceptor_.get_io_service().dispatch(boost::bind(&boost::asio::ip::tcp::acceptor::close,
-        &acceptor_));
-
-    // Stop accept_service_pool from block.
-    acceptor_service_pool_.stop();
-  }
-
-private:
 
   /// Start to accept one connection.
   void accept_one()
@@ -214,6 +254,12 @@ private:
 
   /// Flag to indicate that the server is started or not.
   bool started_;
+
+  /// Flag to indicate that start() functions will block or not.
+  bool block_;  
+
+  /// Flag to indicate the server whether with gracefully stop mode.
+  bool force_stop_;
 };
 
 } // namespace bas
