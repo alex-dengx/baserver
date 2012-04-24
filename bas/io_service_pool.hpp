@@ -82,7 +82,7 @@ public:
   }
 
   /// Get work status of the pool.
-  bool  is_free(void)
+  bool is_free(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
