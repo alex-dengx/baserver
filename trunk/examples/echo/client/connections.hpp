@@ -47,6 +47,7 @@ public:
   {
     BOOST_ASSERT(connection_number != 0);
   }
+
   void run(void)
   {
     run(false);
@@ -54,14 +55,20 @@ public:
 
   void run(bool force_stop)
   {
-    boost::posix_time::ptime time_start = boost::posix_time::microsec_clock::universal_time();
+    boost::posix_time::ptime time_start;
+    boost::posix_time::time_duration time_long;
+
     std::cout << "Creating " << connection_number_ << " connections.\n";
+    time_start = boost::posix_time::microsec_clock::universal_time();
 
     work_service_pool_.start();
     io_service_pool_.start();
 
     for (std::size_t i = 0; i < connection_number_; ++i)
       client_.connect(io_service_pool_.get_io_service(), work_service_pool_.get_io_service());
+
+    time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
+    std::cout << "All connections created in " << time_long.total_milliseconds() << " ms.\n";
 
     if (force_stop)
     {
@@ -82,8 +89,9 @@ public:
       }
     }
 
-    boost::posix_time::time_duration time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
+    time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.\n";
+/*
     std::cout << "Please wait for 5 sesonds.\n";
     std::cout.flush();
 
@@ -91,6 +99,7 @@ public:
     boost::asio::deadline_timer timer(io_service);
     timer.expires_from_now(boost::posix_time::seconds(5));
     timer.wait();
+*/
   }
 
 private:

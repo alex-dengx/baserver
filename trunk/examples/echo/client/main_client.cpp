@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#define BOOST_LIB_DIAGNOSTIC
+//#define BOOST_LIB_DIAGNOSTIC
 
 #include <iostream>
 #include <string>
@@ -40,8 +40,8 @@ int main(int argc, char* argv[])
     std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[5]);
     std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[6]);
     std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[7]);
-    std::size_t session_timeout = boost::lexical_cast<std::size_t>(argv[8]);
-    std::size_t io_timeout = boost::lexical_cast<std::size_t>(argv[9]);
+    unsigned int session_timeout = boost::lexical_cast<unsigned int>(argv[8]);
+    unsigned int io_timeout = boost::lexical_cast<unsigned int>(argv[9]);
     std::size_t connection_number = boost::lexical_cast<std::size_t>(argv[10]);
 
     typedef bas::service_handler_pool<echo::client_work, echo::client_work_allocator> client_handler_pool;
