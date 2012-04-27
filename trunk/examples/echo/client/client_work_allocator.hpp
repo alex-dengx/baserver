@@ -12,6 +12,7 @@
 #define BAS_ECHO_CLIENT_WORK_ALLOCATOR_HPP
 
 #include "client_work.hpp"
+#include "error_count.hpp"
 
 namespace echo {
 
@@ -20,7 +21,9 @@ class client_work_allocator
 public:
   typedef boost::asio::ip::tcp::socket socket_type;
 
-  client_work_allocator()
+  client_work_allocator(error_count* counter, unsigned int pause_time)
+    : error_count_(counter),
+      pause_time_(pause_time)
   {
   }
 
@@ -31,8 +34,12 @@ public:
 
   client_work* make_handler()
   {
-    return new client_work();
+    return new client_work(error_count_, pause_time_);
   }
+
+private:
+  error_count* error_count_;
+  unsigned int pause_time_;
 };
 
 } // namespace echo
