@@ -26,6 +26,9 @@ namespace bas {
 /// Struct for deliver event cross multiple hander.
 struct event
 {
+  /// Define type reference of std::size_t.
+  typedef std::size_t size_type;
+
   enum state_t
   {
     none = 0,
@@ -40,20 +43,16 @@ struct event
     user = 1000
   };
 
-  std::size_t state_;
-  std::size_t value_;
+  size_type state_;
+  size_type value_;
 
-  event(std::size_t state = 0,
-      std::size_t value = 0)
+  event(size_type state = 0,
+      size_type value = 0)
     : state_(state),
       value_(value)
   {
   }
 };
-
-template<typename, typename, typename> class service_handler_pool;
-template<typename, typename, typename> class server;
-template<typename, typename, typename> class client;
 
 /// Object for handle socket asynchronous operations.
 template<typename Work_Handler, typename Socket_Service = boost::asio::ip::tcp::socket>
@@ -63,6 +62,12 @@ class service_handler
 {
 public:
   using boost::enable_shared_from_this<service_handler<Work_Handler, Socket_Service> >::shared_from_this;
+
+  /// Define type reference of std::size_t.
+  typedef std::size_t size_type;
+
+  /// Define type reference of boost::asio::io_service.
+  typedef boost::asio::io_service io_service_type;
 
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
@@ -75,8 +80,8 @@ public:
 
   /// Construct a service_handler object.
   explicit service_handler(work_handler_type* work_handler,
-      std::size_t read_buffer_size,
-      std::size_t write_buffer_size = 0,
+      size_type read_buffer_size,
+      size_type write_buffer_size = 0,
       unsigned int session_timeout = 0,
       unsigned int io_timeout = 0)
     : work_handler_(work_handler),
@@ -91,6 +96,7 @@ public:
       read_buffer_(read_buffer_size),
       write_buffer_(write_buffer_size)
   {
+    // Make sure work_handler != 0.
     BOOST_ASSERT(work_handler != 0);
   }
   
@@ -111,10 +117,27 @@ public:
     return write_buffer_;
   }
 
+  /// Get the io_service object used to perform asynchronous operations.
+  io_service_type& io_service()
+  {
+    BOOST_ASSERT(io_service_ != 0);
+
+    return *io_service_;
+  }
+
+  /// Get the io_service object used to dispatch synchronous works.
+  io_service_type& work_service()
+  {
+    BOOST_ASSERT(work_service_ != 0);
+
+    return *work_service_;
+  }
+
   /// Get the socket associated with the service_handler.
   socket_type& socket()
   {
     BOOST_ASSERT(socket_.get() != 0);
+
     return *socket_;
   }
 
@@ -138,13 +161,13 @@ public:
   }
 
   /// Start an asynchronous operation from any thread to read any amount of data from the socket.
-  /// Caller must be sure that read_buffer().space() > 0.
+  ///   Caller must be sure that read_buffer().space() > 0.
   void async_read_some()
   {
-    //BOOST_ASSERT(read_buffer().space() != 0);
     if (read_buffer().space() == 0)
     {
       close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+
       return;
     }
     
@@ -161,13 +184,13 @@ public:
   }
 
   /// Start an asynchronous operation from any thread to read a certain amount of data from the socket.
-  /// Caller must be sure that length != 0 and length <= read_buffer().space().
-  void async_read(std::size_t length)
+  ///   Caller must be sure that length != 0 and length <= read_buffer().space().
+  void async_read(size_type length)
   {
-    //BOOST_ASSERT(length != 0 && length <= read_buffer().space());
     if ((length == 0) || (length > read_buffer().space()))
     {
       close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+
       return;
     }
 
@@ -184,13 +207,13 @@ public:
   }
 
   /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
-  /// Caller must be sure that write_buffer().size() > 0.
+  ///   Caller must be sure that write_buffer().size() > 0.
   void async_write()
   {
-    //BOOST_ASSERT(write_buffer().size() != 0);
     if (write_buffer().size() == 0)
     {
       close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+
       return;
     }
 
@@ -198,13 +221,13 @@ public:
   }
 
   /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
-  /// Caller must be sure that length != 0 and length <= write_buffer().size().
-  void async_write(std::size_t length)
+  ///   Caller must be sure that length != 0 and length <= write_buffer().size().
+  void async_write(size_type length)
   {
-    //BOOST_ASSERT(length != 0 && length <= write_buffer().size());
     if ((length == 0) || (length > write_buffer().size()))
     {
       close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
+
       return;
     }
     
@@ -236,30 +259,15 @@ public:
         event));
   }
 
-  /// Get the io_service object used to perform asynchronous operations.
-  boost::asio::io_service& io_service()
-  {
-    BOOST_ASSERT(io_service_ != 0);
-    return *io_service_;
-  }
-
-  /// Get the io_service object used to dispatch synchronous works.
-  boost::asio::io_service& work_service()
-  {
-    BOOST_ASSERT(work_service_ != 0);
-    return *work_service_;
-  }
-
 private:
   template<typename, typename, typename> friend class service_handler_pool;
   template<typename, typename, typename> friend class server;
   template<typename, typename, typename> friend class client;
-  template<typename, typename> friend class service_handler;
 
   /// Bind a service_handler with the given io_service and work_service.
   template<typename Work_Allocator>
-  void bind(boost::asio::io_service& io_service,
-      boost::asio::io_service& work_service,
+  void bind(io_service_type& io_service,
+      io_service_type& work_service,
       Work_Allocator& work_allocator)
   {
     stopped_ = false;
@@ -268,6 +276,7 @@ private:
 
     if (session_timeout_ != 0)
       session_timer_.reset(new boost::asio::deadline_timer(io_service));
+
     if (io_timeout_ != 0)
       io_timer_.reset(new boost::asio::deadline_timer(io_service));
 
@@ -279,7 +288,7 @@ private:
     write_buffer().clear();
 
     // Clear work handler for new operations.
-    // Only low-level operations used to perform the necessary and should return ASAP.
+    //   Only low-level operations used to perform the necessary and should return ASAP.
     work_handler_->on_clear(*this);
   }
 
@@ -295,10 +304,11 @@ private:
   void start()
   {
     BOOST_ASSERT(socket_.get() != 0);
+    BOOST_ASSERT(io_service_ != 0);
     BOOST_ASSERT(work_service_ != 0);
 
     // If start from connect, timer has been setted, set it again.
-    // Set timer for session timeout.
+    //   Set timer for session timeout.
     set_session_expiry();
 
     // Post to work_service for executing do_open.
@@ -312,6 +322,7 @@ private:
   void connect_i(boost::asio::ip::tcp::endpoint& endpoint)
   {
     BOOST_ASSERT(socket_.get() != 0);
+    BOOST_ASSERT(io_service_ != 0);
     BOOST_ASSERT(work_service_ != 0);
 
     // Set timer for session timeout.
@@ -437,7 +448,7 @@ private:
 
   /// Handle completion of a read operation in io_service thread.
   void handle_read(const boost::system::error_code& e,
-      std::size_t bytes_transferred)
+      size_type bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -462,7 +473,7 @@ private:
 
   /// Handle completion of a write operation in io_service thread.
   void handle_write(const boost::system::error_code& e,
-      std::size_t bytes_transferred)
+      size_type bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -514,10 +525,10 @@ private:
       // Initiate graceful service_handler closure.
       boost::system::error_code ignored_ec;
       socket().lowest_layer().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      socket().lowest_layer().close();
+      socket().lowest_layer().close(ignored_ec);
 
       // Timer has not been expired, or expired but not dispatched,
-      // cancel it even if expired.
+      //   cancel it even if expired.
       cancel_session_expiry();
       cancel_io_expiry();
 
@@ -540,7 +551,7 @@ private:
   }
 
   /// Do on_read in work_service thread.
-  void do_read(std::size_t bytes_transferred)
+  void do_read(size_type bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -551,7 +562,7 @@ private:
   }
 
   /// Do on_write in work_service thread.
-  void do_write(std::size_t bytes_transferred)
+  void do_write(size_type bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -613,6 +624,7 @@ private:
     // Call on_close function of the work handler.
     work_handler_->on_close(*this, e);
 
+    // Destroy all timer.
     session_timer_.reset();
     io_timer_.reset();
 
@@ -644,10 +656,10 @@ private:
   unsigned int io_timeout_;
 
   /// The io_service for for asynchronous operations.
-  boost::asio::io_service* io_service_;
+  io_service_type* io_service_;
 
   /// The io_service for for executing synchronous works.
-  boost::asio::io_service* work_service_;
+  io_service_type* work_service_;
 
   // Flag to indicate that the handler has been stopped and can not do synchronous operations.
   bool stopped_;

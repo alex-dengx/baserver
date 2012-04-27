@@ -26,6 +26,12 @@ class client
   : private boost::noncopyable
 {
 public:
+  /// Define type reference of boost::asio::io_service.
+  typedef boost::asio::io_service io_service_type;
+
+  /// Define type reference of boost::asio::ip::tcp::endpoint.
+  typedef boost::asio::ip::tcp::endpoint endpoint_type;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
   typedef boost::shared_ptr<service_handler_type> service_handler_ptr;
@@ -35,16 +41,16 @@ public:
   typedef boost::shared_ptr<service_handler_pool_type> service_handler_pool_ptr;
 
   /// Construct the client object for connect to specified TCP address and port.
-  client(const std::string& address,
-      unsigned short port,
-      service_handler_pool_type* service_handler_pool)
+  explicit client(service_handler_pool_type* service_handler_pool,
+      const std::string& address,
+      unsigned short port)
     : service_handler_pool_(service_handler_pool),
       endpoint_(boost::asio::ip::address::from_string(address), port)
   {
     BOOST_ASSERT(service_handler_pool != 0);
 
     // Create preallocated handlers of the pool.
-    service_handler_pool->init();  
+    service_handler_pool_->init();
   }
 
   /// Construct the client object for connect to specified TCP address and port.
@@ -54,13 +60,13 @@ public:
     BOOST_ASSERT(service_handler_pool != 0);
 
     // Create preallocated handlers of the pool.
-    service_handler_pool->init();
+    service_handler_pool_->init();
   }
 
   /// Destruct the client object.
    ~client()
   {
-    // Release preallocated handler in the pool.
+    // Release all handlers in the pool.
     service_handler_pool_->close();
 
     // Destroy service_handler pool.
@@ -68,26 +74,34 @@ public:
   }
 
   /// Make an connection with given io_service and work_service.
-  void connect(boost::asio::io_service& io_service,
-      boost::asio::io_service& work_service,
-      boost::asio::ip::tcp::endpoint& endpoint)
+  bool connect(io_service_type& io_service,
+      io_service_type& work_service,
+      endpoint_type& endpoint)
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
         work_service);
 
+    if (new_handler.get() == 0)
+      return false;
+
     // Use new handler to connect.
     new_handler->connect(endpoint);
+
+    return true;
   }
 
   /// Make an connection with the given parent_handler.
   template<typename Parent_Handler>
-  void connect(Parent_Handler& parent_handler,
-      boost::asio::ip::tcp::endpoint& endpoint)
+  bool connect(Parent_Handler& parent_handler,
+      endpoint_type& endpoint)
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler.io_service(),
         parent_handler.work_service());
+
+    if (new_handler.get() == 0)
+      return false;
 
     // Execute in work_thread, because connect will be called in the same thread.
     parent_handler.set_child(new_handler.get());
@@ -95,48 +109,50 @@ public:
     
     // Use new handler to connect.
     new_handler->connect(endpoint);
+
+    return true;
   }
 
   /// Make an connection with given io_service and work_service.
-  void connect(boost::asio::io_service& io_service,
-      boost::asio::io_service& work_service)
+  bool connect(io_service_type& io_service,
+      io_service_type& work_service)
   {
     // Connect with the internal endpoint.
-    connect(io_service, work_service, endpoint_);
+    return connect(io_service, work_service, endpoint_);
   }
 
   /// Make an connection to specific host with given io_service and work_service.
-  void connect(boost::asio::io_service& io_service,
-      boost::asio::io_service& work_service,
+  bool connect(io_service_type& io_service,
+      io_service_type& work_service,
       const std::string& address,
       unsigned short port)
   {
     // Prepare endpoint for connect.
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+    endpoint_type endpoint(boost::asio::ip::address::from_string(address), port);
 
     // Connect with the given endpoint.
-    connect(io_service, work_service, endpoint);
+    return connect(io_service, work_service, endpoint);
   }
 
   /// Make an connection with the given parent_handler.
   template<typename Parent_Handler>
-  void connect(Parent_Handler& parent_handler)
+  bool connect(Parent_Handler& parent_handler)
   {
     // Connect with the internal endpoint.
-    connect(parent_handler, endpoint_);
+    return connect(parent_handler, endpoint_);
   }
 
   /// Make an connection to specific host with the given parent_handler.
   template<typename Parent_Handler>
-  void connect(Parent_Handler& parent_handler,
+  bool connect(Parent_Handler& parent_handler,
       const std::string& address,
       unsigned short port)
   {
     // Prepare endpoint for connect.
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
+    endpoint_type endpoint(boost::asio::ip::address::from_string(address), port);
 
     // Connect with the given endpoint.
-    connect(parent_handler, endpoint);
+    return connect(parent_handler, endpoint);
   }
 
 private:
@@ -144,7 +160,7 @@ private:
   service_handler_pool_ptr service_handler_pool_;
 
   /// The server endpoint.
-  boost::asio::ip::tcp::endpoint endpoint_;
+  endpoint_type endpoint_;
 };
 
 } // namespace bas
