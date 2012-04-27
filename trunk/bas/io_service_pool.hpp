@@ -2,7 +2,7 @@
 // io_service_pool.hpp
 // ~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2011 Xu Ye Jun (moore.xu@gmail.com)
+// Copyright (c) 2009, 2011 Xu Ye Jun (moore.xu@gmail.com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -31,10 +31,13 @@ class io_service_pool
   : private boost::noncopyable
 {
 public:
+  /// Define type reference of std::size_t.
+  typedef std::size_t size_type;
+
   /// Construct the io_service pool.
-  explicit io_service_pool(std::size_t pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      std::size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
-      std::size_t pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
+  explicit io_service_pool(size_type pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_type pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
+      size_type pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
     : mutex_(),
       io_services_(),
       work_(),
@@ -50,7 +53,7 @@ public:
     BOOST_ASSERT(pool_thread_load != 0);
 
     // Create io_service pool.
-    for (std::size_t i = 0; i < pool_init_size; ++i)
+    for (size_type i = 0; i < pool_init_size; ++i)
     {
       io_service_ptr io_service(new boost::asio::io_service);
       io_services_.push_back(io_service);
@@ -64,19 +67,20 @@ public:
     stop();
 
     // Destroy io_service pool.
-    for (std::size_t i = 0; i < io_services_.size(); ++i)
+    for (size_type i = 0; i < io_services_.size(); ++i)
       io_services_[i].reset();
+
     io_services_.clear();
   }
 
   /// Get the size of the pool.
-  std::size_t size()
+  size_type size() const
   {
     return io_services_.size();
   }
 
   /// Get the load of each thread.
-  std::size_t get_thread_load()
+  size_type get_thread_load() const
   {
     return pool_thread_load_;
   }
@@ -103,7 +107,7 @@ public:
   }
 
   /// Stop all io_service objects in the pool with gracefully mode,
-  /// All work will be finished and there are no more handlers to be dispatched.
+  ///   All work will be finished and there are no more handlers to be dispatched.
   void stop()
   {
     stop(false);
@@ -113,11 +117,12 @@ public:
   void stop(bool force)
   {
     // Allow all operations and handlers to be finished normally,
-    // the work object may be explicitly destroyed.
+    //   the work object may be explicitly destroyed.
 
     // Destroy all work.
-    for (std::size_t i = 0; i < work_.size(); ++i)
+    for (size_type i = 0; i < work_.size(); ++i)
       work_[i].reset();
+
     work_.clear();
 
     // If in force mode, maybe some handlers cannot be dispatched.
@@ -136,14 +141,15 @@ public:
     boost::asio::io_service& io_service = *io_services_[next_io_service_];
     if (++next_io_service_ == io_services_.size())
       next_io_service_ = 0;
+
     return io_service;
   }
 
   /// Get an io_service to use. if need then create one to use.
-  boost::asio::io_service& get_io_service(std::size_t load)
+  boost::asio::io_service& get_io_service(size_type load)
   {
     // Calculate the required number of threads.
-    std::size_t threads_number = load / pool_thread_load_;
+    size_type threads_number = load / pool_thread_load_;
     if ((threads_number > io_services_.size()) && (io_services_.size() < pool_high_watermark_) && !block_)
     {
       // Create new io_service and start it.
@@ -168,7 +174,7 @@ private:
       return;
 
     // Wait for all threads in the pool to exit.
-    for (std::size_t i = 0; i < threads_.size(); ++i)
+    for (size_type i = 0; i < threads_.size(); ++i)
       threads_[i]->join();
 
     // Destroy all threads.
@@ -196,7 +202,7 @@ private:
     io_service->reset();
 
     // Give the io_service work to do so that its run() functions will not
-    // exit until work was explicitly destroyed.
+    //   exit until work was explicitly destroyed.
     work_ptr work(new boost::asio::io_service::work(*io_service));
     work_.push_back(work);
 
@@ -217,7 +223,7 @@ private:
     is_free_ = true;
 
     // Start all io_service.
-    for (std::size_t i = 0; i < io_services_.size(); ++i)
+    for (size_type i = 0; i < io_services_.size(); ++i)
       start_one(io_services_[i]);
 
     block_ = block;
@@ -231,7 +237,7 @@ private:
   void force_stop(void)
   {
     // Force stop all io_service, maybe some handlers cannot be dispatched.
-    for (std::size_t i = 0; i < io_services_.size(); ++i)
+    for (size_type i = 0; i < io_services_.size(); ++i)
       io_services_[i]->stop();
   }
 
@@ -252,13 +258,13 @@ private:
   std::vector<thread_ptr> threads_;
 
   /// High water mark of the pool.
-  std::size_t pool_high_watermark_;
+  size_type pool_high_watermark_;
 
   /// Carrying the load of each thread.
-  std::size_t pool_thread_load_;
+  size_type pool_thread_load_;
 
   /// The next io_service to use for a connection.
-  std::size_t next_io_service_;
+  size_type next_io_service_;
 
   /// Flag to indicate that start() functions will block or not.
   bool block_;

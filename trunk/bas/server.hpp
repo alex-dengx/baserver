@@ -23,7 +23,8 @@
 
 namespace bas {
 
-#define BAS_ACCEPT_QUEUE_LENGTH  250
+#define BAS_ACCEPT_QUEUE_LENGTH   250
+#define BAS_ACCEPT_DELAY_SECONDS  1
 
 /// The top-level class of the server.
 template<typename Work_Handler, typename Work_Allocator, typename Socket_Service = boost::asio::ip::tcp::socket>
@@ -31,6 +32,9 @@ class server
   : private boost::noncopyable
 {
 public:
+  /// Define type reference of std::size_t.
+  typedef std::size_t size_type;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
   typedef boost::shared_ptr<service_handler_type> service_handler_ptr;
@@ -43,16 +47,17 @@ public:
   explicit server(service_handler_pool_type* service_handler_pool,
       const std::string& address,
       unsigned short port,
-      std::size_t io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      std::size_t work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      std::size_t work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
-      std::size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
-      std::size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
+      size_type io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_type work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_type work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
+      size_type work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
+      size_type accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
       acceptor_service_pool_(1),
       io_service_pool_(io_pool_size),
       work_service_pool_(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load),
       acceptor_(acceptor_service_pool_.get_io_service()),
+      timer_(acceptor_.get_io_service()),
       endpoint_(boost::asio::ip::address::from_string(address), port),
       accept_queue_length_(accept_queue_length),
       started_(false),
@@ -63,7 +68,7 @@ public:
     BOOST_ASSERT(accept_queue_length != 0);
 
     // Create preallocated handlers of the pool.
-    service_handler_pool->init();
+    service_handler_pool_->init();
   }
 
   /// Destruct the server object.
@@ -72,7 +77,7 @@ public:
     // Stop the server's io_service loop.
     stop();
 
-    // Release preallocated handler in the pool.
+    // Release all handlers in the pool.
     service_handler_pool_->close();
 
     // Destroy service_handler pool.
@@ -80,7 +85,7 @@ public:
   }
   
   /// Set stop with gracefully mode or force mode.
-  void set_stop_mode(bool force_stop = false)
+  void set_force_stop(bool force_stop = false)
   {
     force_stop_ = force_stop;
   }
@@ -112,7 +117,7 @@ public:
 
     if (!block_)
     {
-      stop_pool();
+      stop_services_pool();
 
       started_ = false;
     }
@@ -133,7 +138,7 @@ private:
     acceptor_.listen();
   
     // Accept new connections.
-    for (std::size_t i = 0; i < accept_queue_length_; ++i)
+    for (size_type i = 0; i < accept_queue_length_; ++i)
       accept_one();
 
     // Start work_service_pool with nonblock to perform synchronous works.
@@ -151,7 +156,7 @@ private:
       // Start accept_service_pool with block to perform asynchronous accept operations.
       acceptor_service_pool_.run();
 
-      stop_pool();
+      stop_services_pool();
 
       started_ = false;
     }
@@ -163,8 +168,8 @@ private:
     }
   }
 
-  /// Wait for all io_service_pool to exit.
-  void stop_pool()
+  /// Wait for all service_pool to exit.
+  void stop_services_pool()
   {
     if (force_stop_)
     {
@@ -198,6 +203,16 @@ private:
     service_handler_ptr handler = service_handler_pool_->get_service_handler(io_service_pool_.get_io_service(),
         work_service_pool_.get_io_service(service_handler_pool_->get_load()));
 
+    if (handler.get() == 0)
+    {
+      timer_.expires_from_now(boost::posix_time::seconds(BAS_ACCEPT_DELAY_SECONDS));
+      timer_.async_wait(boost::bind(&server::handle_timeout,
+          this,
+          boost::asio::placeholders::error));
+      
+      return;
+    }
+
     // Use new handler to accept, and bind with acceptor's io_service.
     acceptor_.async_accept(handler->socket().lowest_layer(),
         boost::bind(&server::handle_accept,
@@ -230,6 +245,17 @@ private:
     }
   }
 
+  /// Handle timeout of wait for repeat accept.
+  void handle_timeout(const boost::system::error_code& e)
+  {
+    // The timer has been cancelled, do nothing.
+    if (e == boost::asio::error::operation_aborted)
+      return;
+
+    // Accept new connection.
+    accept_one();
+  }
+
 private:
   /// The pool of service_handler objects.
   service_handler_pool_ptr service_handler_pool_;
@@ -246,11 +272,14 @@ private:
   /// The acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor acceptor_;
 
+  /// The timer for repeat accept delay.
+  boost::asio::deadline_timer timer_;
+
   /// The server endpoint.
   boost::asio::ip::tcp::endpoint endpoint_;
 
   /// The queue length for async_accept.
-  std::size_t accept_queue_length_;
+  size_type accept_queue_length_;
 
   /// Flag to indicate that the server is started or not.
   bool started_;
