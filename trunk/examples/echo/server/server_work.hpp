@@ -40,7 +40,7 @@ public:
     //std::cout << "client ip is " << handler.socket().remote_endpoint().address().to_string() << "\n";
     //std::cout.flush();
 
-    time_start = boost::posix_time::microsec_clock::universal_time();
+    //time_start = boost::posix_time::microsec_clock::universal_time();
     handler.async_read_some();
   }
 
@@ -60,7 +60,7 @@ public:
     handler.read_buffer().clear();
     handler.async_read_some();
 
-//    handler.close();
+   //handler.close();
   }
 
   void on_close(server_handler_type& handler, const boost::system::error_code& e)
@@ -79,20 +79,23 @@ public:
       case boost::asio::error::connection_aborted:
       case boost::asio::error::connection_reset:
       case boost::asio::error::connection_refused:
+        std::cout << "C";
         break;
 
       // Other error.
       case boost::asio::error::timed_out:
-        time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
-        std::cout << "server error " << e << " message " << e.message() << "\n";
-        std::cout << "time is " << time_long.total_milliseconds() << " ms.\n";
-        std::cout.flush();
+        //time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
+        //std::cout << "server error " << e << " message " << e.message() << "\n";
+        //std::cout << "time is " << time_long.total_milliseconds() << " ms.\n";
+        //std::cout.flush();
+        std::cout << "T";
         break;
         
       case boost::asio::error::no_buffer_space:
       default:
-        std::cout << "server error " << e << " message " << e.message() << "\n";
-        std::cout.flush();
+        //std::cout << "server error " << e << " message " << e.message() << "\n";
+        //std::cout.flush();
+        std::cout << "O";
         break;
     }
   }
