@@ -18,8 +18,6 @@
 #include <memory>
 #include <vector>
 
-#include <bas/io_buffer.hpp>
-
 namespace bastool {
 
 #define BASTOOL_BYTE_STRING_DEFAULT_CAPACITY    256
@@ -28,7 +26,7 @@ namespace bastool {
 class byte_string
 {
 public:
-  /// The type of the bytes stored in io_buffer.
+  /// The type of the bytes stored in the buffer.
   typedef unsigned char byte_t;
 
   /// Define type reference of std::size_t.
