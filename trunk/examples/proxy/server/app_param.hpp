@@ -2,8 +2,8 @@
 // app_param.hpp
 // ~~~~~~~~~~~~
 
-#ifndef ECHO_APP_PARAM_HPP
-#define ECHO_APP_PARAM_HPP
+#ifndef PROXY_APP_PARAM_HPP
+#define PROXY_APP_PARAM_HPP
 
 #include <boost/program_options.hpp>
 #include <string>
@@ -11,7 +11,7 @@
 
 #include "config.hpp"
 
-namespace echo {
+namespace proxy {
 
 /// Define the param of application.
 struct app_param
@@ -35,6 +35,9 @@ struct app_param
   std::size_t    write_buffer_size;
   unsigned int   session_timeout;
   unsigned int   io_timeout;
+
+  std::string    proxy_ip;
+  unsigned short proxy_port;
 };
 
 /// Read parameters from config file.
@@ -47,7 +50,7 @@ static int get_param(const std::string& config_file,
   std::ifstream fin(config_file.c_str());
 
   if (!fin.is_open())
-    return ECHO_ERR_FILE_NOT_FOUND;
+    return PROXY_ERR_FILE_NOT_FOUND;
 
   opt_desc.add_options()
     ("server.ip"                    , bpo::value<std::string   >()->default_value(""  ), "")
@@ -69,6 +72,9 @@ static int get_param(const std::string& config_file,
     ("server.write_buffer_size"     , bpo::value<std::size_t   >()->default_value(   0), "")
     ("server.session_timeout"       , bpo::value<unsigned int  >()->default_value(  30), "")
     ("server.io_timeout"            , bpo::value<unsigned int  >()->default_value(   0), "")
+
+    ("proxy.ip"                     , bpo::value<std::string   >()->default_value(""  ), "")
+    ("proxy.port"                   , bpo::value<unsigned short>()->default_value(2012), "")
     ;
 
   bpo::store(bpo::parse_config_file(fin, opt_desc, true), var_map);
@@ -94,9 +100,12 @@ static int get_param(const std::string& config_file,
   param.session_timeout       = var_map["server.session_timeout"      ].as<unsigned int>();
   param.io_timeout            = var_map["server.io_timeout"           ].as<unsigned int>();
 
-  return ECHO_ERR_NONE;
+  param.proxy_ip              = var_map["proxy.ip"                    ].as<std::string>();
+  param.proxy_port            = var_map["proxy.port"                  ].as<unsigned short>();
+
+  return PROXY_ERR_NONE;
 }
 
-} // namespace echo
+} // namespace proxy
 
-#endif ECHO_APP_PARAM_HPP
+#endif PROXY_APP_PARAM_HPP

@@ -25,14 +25,14 @@ namespace bas {
 class io_buffer
 {
 public:
-  /// The type of the bytes stored in the buffer.
-  typedef unsigned char byte_type;
+  /// The type of the bytes stored in io_buffer.
+  typedef unsigned char byte_t;
 
-  /// The type used for offsets into the buffer.
-  typedef std::size_t size_type;
+  /// Define type reference of std::size_t.
+  typedef std::size_t size_t;
 
   /// Constructor.
-  explicit io_buffer(size_type capacity)
+  explicit io_buffer(size_t capacity)
     : begin_offset_(0),
       end_offset_(0),
       buffer_(capacity)
@@ -47,13 +47,13 @@ public:
   }
 
   /// Return a pointer to the beginning of the unread data.
-  byte_type* data()
+  byte_t* data()
   {
     return &buffer_[0] + begin_offset_;
   }
 
   /// Return a pointer to the beginning of the unread data.
-  const byte_type* data() const
+  const byte_t* data() const
   {
     return &buffer_[0] + begin_offset_;
   }
@@ -65,13 +65,13 @@ public:
   }
 
   /// Return the amount of unread data in the buffer.
-  size_type size() const
+  size_t size() const
   {
     return end_offset_ - begin_offset_;
   }
 
   /// Resize the buffer to the specified length.
-  void resize(size_type length)
+  void resize(size_t length)
   {
     BOOST_ASSERT(length <= capacity());
 
@@ -88,19 +88,19 @@ public:
   }
 
   /// Return the maximum size for data in the buffer.
-  size_type capacity() const
+  size_t capacity() const
   {
     return buffer_.size();
   }
 
   /// Return the amount of free space in the buffer.
-  size_type space() const
+  size_t space() const
   {
     return capacity() - end_offset_;
   }
 
   /// Consume multiple bytes from the beginning of the buffer.
-  void consume(size_type count)
+  void consume(size_t count)
   {
     BOOST_ASSERT(count <= size());
 
@@ -113,7 +113,7 @@ public:
   }
 
   /// Produce multiple bytes to the ending of the buffer.
-  void produce(size_type count)
+  void produce(size_t count)
   {
     BOOST_ASSERT(count <= space());
 
@@ -140,13 +140,13 @@ public:
 
 private:
   /// The offset to the beginning of the unread data.
-  size_type begin_offset_;
+  size_t begin_offset_;
 
   /// The offset to the end of the unread data.
-  size_type end_offset_;
+  size_t end_offset_;
   
   /// The data in the buffer.
-  std::vector<byte_type> buffer_;
+  std::vector<byte_t> buffer_;
 };
 
 } // namespace bas
