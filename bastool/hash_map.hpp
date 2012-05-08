@@ -43,17 +43,17 @@ public:
   typedef std::size_t size_t;
 
   /// The type of value in the map.
-  typedef std::pair<K, V> value_type;
+  typedef std::pair<K, V> value_t;
 
   /// The type of bucket in the map.
-  typedef typename std::vector<value_type> bucket_type;
+  typedef typename std::vector<value_t> bucket_t;
   
   /// The type of mutex in the map.
-  typedef typename boost::shared_mutex mutex_type;
+  typedef typename boost::shared_mutex mutex_t;
 
   /// The type of lock in the map.
-  typedef boost::shared_lock<mutex_type> read_lock_type;
-  typedef boost::unique_lock<mutex_type> write_lock_type; 
+  typedef boost::shared_lock<mutex_t> read_lock_t;
+  typedef boost::unique_lock<mutex_t> write_lock_t;
 
   /// Constructor with default number of elements.
   hash_map()
@@ -87,10 +87,10 @@ public:
       return NULL;
 
     size_t bucket_seat = calculate_hash_value(k) % num_buckets_;
-    bucket_type& bucket = buckets_[bucket_seat];
+    bucket_t& bucket = buckets_[bucket_seat];
 
     // Use read lock for share read.
-    read_lock_type lock(mutexs_[bucket_seat % num_mutexs_]);
+    read_lock_t lock(mutexs_[bucket_seat % num_mutexs_]);
 
     size_t bucket_size = bucket.size();
     for (size_t i = 0; i < bucket_size; ++i)
@@ -117,16 +117,16 @@ public:
   }
 
   /// Insert a new entry into the map.
-  bool insert(const value_type& value)
+  bool insert(const value_t& value)
   {
     if (mutexs_ == NULL)
       return false;
 
     size_t bucket_seat = calculate_hash_value(value.first) % num_buckets_;
-    bucket_type& bucket = buckets_[bucket_seat];
+    bucket_t& bucket = buckets_[bucket_seat];
 
     // Use write lock for exclusive write.
-    write_lock_type lock(mutexs_[bucket_seat % num_mutexs_]);
+    write_lock_t lock(mutexs_[bucket_seat % num_mutexs_]);
 
     size_t bucket_size = bucket.size();
     for (size_t i = 0; i < bucket_size; ++i)
@@ -143,22 +143,22 @@ public:
   /// Insert a new entry into the map.
   bool insert(const K& k, const V& v)
   {
-    value_type value(k, v);
+    value_t value(k, v);
 
     return insert(value);
   }
 
   /// Update an entry into the map.
-  bool update(const value_type& value)
+  bool update(const value_t& value)
   {
     if (mutexs_ == NULL)
       return false;
 
     size_t bucket_seat = calculate_hash_value(value.first) % num_buckets_;
-    bucket_type& bucket = buckets_[bucket_seat];
+    bucket_t& bucket = buckets_[bucket_seat];
 
     // Use write lock for exclusive write.
-    write_lock_type lock(mutexs_[bucket_seat % num_mutexs_]);
+    write_lock_t lock(mutexs_[bucket_seat % num_mutexs_]);
 
     size_t bucket_size = bucket.size();
     for (size_t i = 0; i < bucket_size; ++i)
@@ -177,22 +177,22 @@ public:
   /// Update an entry into the map.
   bool update(const K& k, const V& v)
   {
-    value_type value(k, v);    
+    value_t value(k, v);    
     
     return update(value);
   }
 
   /// Insert or update an entry into the map.
-  bool insert_update(const value_type& value)
+  bool insert_update(const value_t& value)
   {
     if (mutexs_ == NULL)
       return false;
 
     size_t bucket_seat = calculate_hash_value(value.first) % num_buckets_;
-    bucket_type& bucket = buckets_[bucket_seat];
+    bucket_t& bucket = buckets_[bucket_seat];
 
     // Use write lock for exclusive write.
-    write_lock_type lock(mutexs_[bucket_seat % num_mutexs_]);
+    write_lock_t lock(mutexs_[bucket_seat % num_mutexs_]);
 
     size_t bucket_size = bucket.size();
     for (size_t i = 0; i < bucket_size; ++i)
@@ -213,7 +213,7 @@ public:
   /// Insert or update an entry into the map.
   bool insert_update(const K& k, const V& v)
   {
-    value_type value(k, v);    
+    value_t value(k, v);    
 
     return insert_update(value);
   }
@@ -225,10 +225,10 @@ public:
       return false;
 
     size_t bucket_seat = calculate_hash_value(k) % num_buckets_;
-    bucket_type& bucket = buckets_[bucket_seat];
+    bucket_t& bucket = buckets_[bucket_seat];
 
     // Use write lock for exclusive write.
-    write_lock_type lock(mutexs_[bucket_seat % num_mutexs_]);
+    write_lock_t lock(mutexs_[bucket_seat % num_mutexs_]);
 
     size_t bucket_size = bucket.size();
     for (size_t i = 0; i < bucket_size; ++i)
@@ -256,7 +256,7 @@ public:
     for (size_t i = 0; i < num_buckets_; ++i)
     {
       // Use write lock for exclusive write.
-      write_lock_type lock(mutexs_[i % num_mutexs_]);
+      write_lock_t lock(mutexs_[i % num_mutexs_]);
       
       buckets_[i].clear();
     }
@@ -272,9 +272,9 @@ public:
     for (size_t i = 0; i < num_buckets_; ++i)
     {
       // Use write lock for exclusive write.
-      write_lock_type lock(mutexs_[i % num_mutexs_]);
+      write_lock_t lock(mutexs_[i % num_mutexs_]);
 
-      bucket_type& bucket = buckets_[i];
+      bucket_t& bucket = buckets_[i];
       size_t bucket_size = bucket.size();
       for (size_t j = 0; j < bucket_size; ++j)
       {
@@ -325,7 +325,7 @@ private:
     if (mutexs_ != NULL)
       return;
 
-    mutexs_ = new mutex_type[num_mutexs_];
+    mutexs_ = new mutex_t[num_mutexs_];
     buckets_.resize(num_buckets_);
   }
   
@@ -346,10 +346,10 @@ private:
 
 private:
   /// The mutexs in the hash.
-  mutex_type* mutexs_;
+  mutex_t* mutexs_;
 
   /// The buckets in the hash.
-  std::vector<bucket_type> buckets_;
+  std::vector<bucket_t> buckets_;
 
   // The number of mutexs in the hash.
   size_t num_mutexs_;
