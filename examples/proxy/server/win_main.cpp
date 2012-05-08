@@ -1,29 +1,27 @@
 //
 // win_main.cpp
 // ~~~~~~~~~~~~
-//
-// Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
-#define BOOST_LIB_DIAGNOSTIC
-
-#include <iostream>
-#include <string>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/lexical_cast.hpp>
-
-#include <bas/server.hpp>
-
-#include "client_work.hpp"
-#include "client_work_allocator.hpp"
-#include "server_work.hpp"
-#include "server_work_allocator.hpp"
 
 #if defined(_WIN32)
+
+#ifndef _WINDOWS_
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  undef WIN32_LEAN_AND_MEAN
+# else  // #ifndef WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+# endif // #ifndef WIN32_LEAN_AND_MEAN
+#endif  // #ifndef _WINDOWS_
+
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <bastool/win_service.hpp>
+#include <iostream>
+
+#include "server_main.hpp"
+
+std::string proxy_service_name = "proxy_server";
 
 boost::function0<void> console_ctrl_function;
 
@@ -42,69 +40,68 @@ BOOL WINAPI console_ctrl_handler(DWORD ctrl_type)
   }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[ ])
 {
-  try
+  if (argc >= 2)
   {
-    // Check command line arguments.
-    if (argc != 13)
+    if (memcmp(argv[1], "/service", 8) == 0 && argc == 3)
     {
-      std::cerr << "Usage: proxy_server <ip_src> <port_src> <ip_dst> <port_dst> <io_pool> <work_init> <work_high> <thread_load> <accept_queue> <pre_handler> <data_buffer> <session_timeout>\n";
-      std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    proxy_server 0.0.0.0 1000 0.0.0.0 2000 4 4 16 100 250 500 1024 0\n";
-      std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    proxy_server 0::0 1000 0.0.0.0 2000 4 4 16 100 250 500 1024 0\n";
-      return 1;
+      server_main server(argv[2]);
+      bastool::win_service service(&server, proxy_service_name);
+      service.run(&service);
+      return 0;
     }
+    else if (memcmp(argv[1], "/install", 8) == 0 && argc == 3)
+    {
+      char bin_path[MAX_PATH];
+      memcpy(bin_path, "/service ", 9);
+      memcpy(bin_path + 9, argv[2], strlen(argv[2]) + 1);
+      DWORD ret = bastool::win_service::install(proxy_service_name, "proxy server", "proxy server base on bas", bin_path);
+      if (ret == 0)
+      {
+        std::cout << "Service proxy_server install success.\n";
+        return 0;
+      }
+      else
+      {
+        std::cerr << "Service proxy_server install failed. errno = " << ret << "\n";
+        return ret;
+      }
+    }
+    else if (memcmp(argv[1], "/delete", 7) == 0)
+    {
+      DWORD ret = bastool::win_service::remove(proxy_service_name);
+      if (ret == 0)
+      {
+        std::cout << "Service proxy_server delete success.\n";
+        return 0;
+      }
+      else
+      {
+        std::cerr << "Service proxy_server delete failed. errno = " << ret << "\n";
+        return ret;
+      }
+    }
+    else if (argc == 2 && memcmp(argv[1], "/install", 8) != 0)
+    {
+      server_main server(argv[1]);
 
-    // Initialise server.
-    unsigned short port_src = boost::lexical_cast<unsigned short>(argv[2]);
-    unsigned short port_dst = boost::lexical_cast<unsigned short>(argv[4]);
-    std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[5]);
-    std::size_t work_pool_init_size = boost::lexical_cast<std::size_t>(argv[6]);
-    std::size_t work_pool_high_watermark = boost::lexical_cast<std::size_t>(argv[7]);
-    std::size_t work_pool_thread_load = boost::lexical_cast<std::size_t>(argv[8]);
-    std::size_t accept_queue_length = boost::lexical_cast<std::size_t>(argv[9]);
-    std::size_t preallocated_handler_number = boost::lexical_cast<std::size_t>(argv[10]);
-    std::size_t read_buffer_size = boost::lexical_cast<std::size_t>(argv[11]);
-    std::size_t session_timeout = boost::lexical_cast<std::size_t>(argv[12]);
+      // Set console control handler to allow server to be stopped.
+      console_ctrl_function = boost::bind(&server_main::stop, &server);
+      SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
 
-    typedef bas::server<proxy::server_work, proxy::server_work_allocator> server;
-    typedef bas::service_handler_pool<proxy::server_work, proxy::server_work_allocator> server_handler_pool;
-    typedef bas::service_handler_pool<proxy::client_work, proxy::client_work_allocator> client_handler_pool;
+      // Run the server until stopped.
+      server.run();
 
-    server s(new server_handler_pool(new proxy::server_work_allocator(argv[3],
-                                         port_dst,
-                                         new client_handler_pool(new proxy::client_work_allocator(),
-                                             preallocated_handler_number,
-                                             read_buffer_size,
-                                             0,
-                                             session_timeout)),
-                 preallocated_handler_number,
-                 read_buffer_size,
-                 0,
-                 session_timeout),
-        argv[1],
-        port_src,
-        io_pool_size,
-        work_pool_init_size,
-        work_pool_high_watermark,
-        work_pool_thread_load,
-        accept_queue_length);
-
-    // Set console control handler to allow server to be stopped.
-    console_ctrl_function = boost::bind(&server::stop, &s);
-    SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
-
-    // Run the server until stopped.
-    s.run();
-  }
-  catch (std::exception& e)
-  {
-    std::cerr << "exception: " << e.what() << "\n";
+      return 0;
+    }
   }
 
-  return 0;
+  std::cerr << "Usage: proxy_server <arguments>\n";
+  std::cerr << "  proxy_server [/install] [config_file] : install proxy_server service.\n";
+  std::cerr << "  proxy_server [/delete]                : delete proxy_server service.\n";
+  std::cerr << "  proxy_server [config_file]            : run as application.\n";
+  return 1;
 }
 
 #endif // defined(_WIN32)

@@ -36,22 +36,22 @@ public:
   typedef std::size_t size_type;
 
   /// The type of the service_handler.
-  typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
-  typedef boost::shared_ptr<service_handler_type> service_handler_ptr;
+  typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
+  typedef boost::shared_ptr<service_handler_t> service_handler_ptr;
 
   /// The type of the service_handler_pool.
-  typedef service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> service_handler_pool_type;
-  typedef boost::shared_ptr<service_handler_pool_type> service_handler_pool_ptr;
+  typedef service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> service_handler_pool_t;
+  typedef boost::shared_ptr<service_handler_pool_t> service_handler_pool_ptr;
 
   /// Construct the server to listen on the specified TCP address and port.
-  explicit server(service_handler_pool_type* service_handler_pool,
+  server(service_handler_pool_t* service_handler_pool,
       const std::string& address,
       unsigned short port,
-      size_type io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      size_type work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
-      size_type work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
-      size_type work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
-      size_type accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
+      size_t io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_t work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_t work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
+      size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
+      size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
       acceptor_service_pool_(1),
       io_service_pool_(io_pool_size),
@@ -138,7 +138,7 @@ private:
     acceptor_.listen();
   
     // Accept new connections.
-    for (size_type i = 0; i < accept_queue_length_; ++i)
+    for (size_t i = 0; i < accept_queue_length_; ++i)
       accept_one();
 
     // Start work_service_pool with nonblock to perform synchronous works.
@@ -279,7 +279,7 @@ private:
   boost::asio::ip::tcp::endpoint endpoint_;
 
   /// The queue length for async_accept.
-  size_type accept_queue_length_;
+  size_t accept_queue_length_;
 
   /// Flag to indicate that the server is started or not.
   bool started_;

@@ -8,8 +8,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BAS_SERVER_BASE_HPP
-#define BAS_SERVER_BASE_HPP
+#ifndef BASTOOL_SERVER_BASE_HPP
+#define BASTOOL_SERVER_BASE_HPP
+
+namespace bastool {
 
 /// The base class for general server.
 class server_base
@@ -37,4 +39,6 @@ public:
   virtual void stop(void) = 0;
 };
 
-#endif  // BAS_SERVER_BASE_HPP
+} // namespace bastool
+
+#endif  // BASTOOL_SERVER_BASE_HPP

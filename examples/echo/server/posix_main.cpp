@@ -19,10 +19,11 @@ int main(int argc, char* argv[])
     // Check command line arguments.
     if (argc != 2)
     {
+      std::cerr << "Usage: echo_server [config_file].\n";
+      return 1;      
     }
 
     server_main s(argv[1]);
-    s.init();
 
     // Block all signals for background thread.
     sigset_t new_mask;

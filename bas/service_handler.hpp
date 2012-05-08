@@ -2,7 +2,7 @@
 // service_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2011 Xu Ye Jun (moore.xu@gmail.com)
+// Copyright (c) 2009, 2011 Xu Ye Jun (moore.xu@gmail.com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -27,32 +27,36 @@ namespace bas {
 struct event
 {
   /// Define type reference of std::size_t.
-  typedef std::size_t size_type;
+  typedef std::size_t size_t;
 
   enum state_t
   {
     none = 0,
-    parent_open,
-    parent_read,
-    parent_write,
-    parent_close,
-    child_open,
-    child_read,
-    child_write,
-    child_close,
+    open,
+    read,
+    write,
+    write_read,
+    close,
+    notify,
     user = 1000
   };
 
-  size_type state_;
-  size_type value_;
+  size_t state;
+  size_t value;
+  boost::system::error_code ec;
 
-  event(size_type state = 0,
-      size_type value = 0)
-    : state_(state),
-      value_(value)
+  event(size_t s = 0,
+      size_t v = 0,
+      boost::system::error_code e = boost::system::error_code())
+    : state(s),
+      value(v),
+      ec(e)
   {
   }
 };
+
+/// Define type reference of enevt.
+typedef event event_t;
 
 /// Object for handle socket asynchronous operations.
 template<typename Work_Handler, typename Socket_Service = boost::asio::ip::tcp::socket>
@@ -64,24 +68,24 @@ public:
   using boost::enable_shared_from_this<service_handler<Work_Handler, Socket_Service> >::shared_from_this;
 
   /// Define type reference of std::size_t.
-  typedef std::size_t size_type;
+  typedef std::size_t size_t;
 
   /// Define type reference of boost::asio::io_service.
-  typedef boost::asio::io_service io_service_type;
+  typedef boost::asio::io_service io_service_t;
 
   /// The type of the service_handler.
-  typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
+  typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
 
   /// The type of the work_handler.
-  typedef Work_Handler work_handler_type;
+  typedef Work_Handler work_handler_t;
 
   /// The type of the socket that will be used to provide asynchronous operations.
-  typedef Socket_Service socket_type;
+  typedef Socket_Service socket_t;
 
-  /// Construct a service_handler object.
-  explicit service_handler(work_handler_type* work_handler,
-      size_type read_buffer_size,
-      size_type write_buffer_size = 0,
+  /// Constructor.
+  service_handler(work_handler_t* work_handler,
+      size_t read_buffer_size,
+      size_t write_buffer_size = 0,
       unsigned int session_timeout = 0,
       unsigned int io_timeout = 0)
     : work_handler_(work_handler),
@@ -118,7 +122,7 @@ public:
   }
 
   /// Get the io_service object used to perform asynchronous operations.
-  io_service_type& io_service()
+  io_service_t& io_service()
   {
     BOOST_ASSERT(io_service_ != 0);
 
@@ -126,7 +130,7 @@ public:
   }
 
   /// Get the io_service object used to dispatch synchronous works.
-  io_service_type& work_service()
+  io_service_t& work_service()
   {
     BOOST_ASSERT(work_service_ != 0);
 
@@ -134,7 +138,7 @@ public:
   }
 
   /// Get the socket associated with the service_handler.
-  socket_type& socket()
+  socket_t& socket()
   {
     BOOST_ASSERT(socket_.get() != 0);
 
@@ -149,7 +153,7 @@ public:
       return;
 
     // Dispatch to io_service thread.
-    io_service().dispatch(boost::bind(&service_handler_type::close_i,
+    io_service().dispatch(boost::bind(&service_handler_t::close_i,
         shared_from_this(),
         e));
   }
@@ -178,14 +182,14 @@ public:
   template<typename Buffers>
   void async_read_some(const Buffers& buffers)
   {
-    io_service().dispatch(boost::bind(&service_handler_type::async_read_some_i<Buffers>,
+    io_service().dispatch(boost::bind(&service_handler_t::async_read_some_i<Buffers>,
         shared_from_this(),
         buffers));
   }
 
   /// Start an asynchronous operation from any thread to read a certain amount of data from the socket.
   ///   Caller must be sure that length != 0 and length <= read_buffer().space().
-  void async_read(size_type length)
+  void async_read(size_t length)
   {
     if ((length == 0) || (length > read_buffer().space()))
     {
@@ -201,7 +205,7 @@ public:
   template<typename Buffers>
   void async_read(const Buffers& buffers)
   {
-    io_service().dispatch(boost::bind(&service_handler_type::async_read_i<Buffers>,
+    io_service().dispatch(boost::bind(&service_handler_t::async_read_i<Buffers>,
         shared_from_this(),
         buffers));
   }
@@ -222,7 +226,7 @@ public:
 
   /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
   ///   Caller must be sure that length != 0 and length <= write_buffer().size().
-  void async_write(size_type length)
+  void async_write(size_t length)
   {
     if ((length == 0) || (length > write_buffer().size()))
     {
@@ -238,23 +242,23 @@ public:
   template<typename Buffers>
   void async_write(const Buffers& buffers)
   {
-    io_service().dispatch(boost::bind(&service_handler_type::async_write_i<Buffers>,
+    io_service().dispatch(boost::bind(&service_handler_t::async_write_i<Buffers>,
         shared_from_this(),
         buffers));
   }
 
-  /// Post event from the parent handler.
-  void post_parent(const bas::event event)
+  /// Post event to the child handler from the parent handler.
+  void parent_post(const bas::event event)
   {
-    work_service().post(boost::bind(&service_handler_type::do_parent,
+    work_service().post(boost::bind(&service_handler_t::do_parent,
         shared_from_this(),
         event));
   }
 
-  /// Post event from the child handler.
-  void post_child(const bas::event event)
+  /// Post event to the parent handler from the child handler.
+  void child_post(const bas::event event)
   {
-    work_service().post(boost::bind(&service_handler_type::do_child,
+    work_service().post(boost::bind(&service_handler_t::do_child,
         shared_from_this(),
         event));
   }
@@ -266,8 +270,8 @@ private:
 
   /// Bind a service_handler with the given io_service and work_service.
   template<typename Work_Allocator>
-  void bind(io_service_type& io_service,
-      io_service_type& work_service,
+  void bind(io_service_t& io_service,
+      io_service_t& work_service,
       Work_Allocator& work_allocator)
   {
     stopped_ = false;
@@ -295,7 +299,7 @@ private:
   /// Start an asynchronous connect, can be call from any thread.
   void connect(boost::asio::ip::tcp::endpoint& endpoint)
   {
-    io_service().dispatch(boost::bind(&service_handler_type::connect_i,
+    io_service().dispatch(boost::bind(&service_handler_t::connect_i,
         shared_from_this(),
         endpoint));
   }
@@ -312,7 +316,7 @@ private:
     set_session_expiry();
 
     // Post to work_service for executing do_open.
-    work_service().post(boost::bind(&service_handler_type::do_open,
+    work_service().post(boost::bind(&service_handler_t::do_open,
         shared_from_this()));
   }
 
@@ -329,7 +333,7 @@ private:
     set_session_expiry();
 
     socket().lowest_layer().async_connect(endpoint,
-        boost::bind(&service_handler_type::handle_connect,
+        boost::bind(&service_handler_t::handle_connect,
             shared_from_this(),
             boost::asio::placeholders::error));
   }
@@ -346,7 +350,7 @@ private:
     set_io_expiry();
 
     socket().async_read_some(buffers,
-        boost::bind(&service_handler_type::handle_read,
+        boost::bind(&service_handler_t::handle_read,
             shared_from_this(),
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -365,7 +369,7 @@ private:
 
     boost::asio::async_read(socket(),
         buffers,
-        boost::bind(&service_handler_type::handle_read,
+        boost::bind(&service_handler_t::handle_read,
             shared_from_this(),
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -384,7 +388,7 @@ private:
 
     boost::asio::async_write(socket(),
         buffers,
-        boost::bind(&service_handler_type::handle_write,
+        boost::bind(&service_handler_t::handle_write,
             shared_from_this(),
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -397,7 +401,7 @@ private:
       return;
 
     session_timer_->expires_from_now(boost::posix_time::seconds(session_timeout_));
-    session_timer_->async_wait(boost::bind(&service_handler_type::handle_timeout,
+    session_timer_->async_wait(boost::bind(&service_handler_t::handle_timeout,
         shared_from_this(),
         boost::asio::placeholders::error));
   }
@@ -416,7 +420,7 @@ private:
       return;
 
     io_timer_->expires_from_now(boost::posix_time::seconds(io_timeout_));
-    io_timer_->async_wait(boost::bind(&service_handler_type::handle_timeout,
+    io_timer_->async_wait(boost::bind(&service_handler_t::handle_timeout,
         shared_from_this(),
         boost::asio::placeholders::error));
   }
@@ -448,7 +452,7 @@ private:
 
   /// Handle completion of a read operation in io_service thread.
   void handle_read(const boost::system::error_code& e,
-      size_type bytes_transferred)
+      size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -460,7 +464,7 @@ private:
     if (!e)
     {
       // Post to work_service for executing do_read.
-      work_service().post(boost::bind(&service_handler_type::do_read,
+      work_service().post(boost::bind(&service_handler_t::do_read,
           shared_from_this(),
           bytes_transferred));
     }
@@ -473,7 +477,7 @@ private:
 
   /// Handle completion of a write operation in io_service thread.
   void handle_write(const boost::system::error_code& e,
-      size_type bytes_transferred)
+      size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -485,7 +489,7 @@ private:
     if (!e)
     {
       // Post to work_service for executing do_write.
-      work_service().post(boost::bind(&service_handler_type::do_write,
+      work_service().post(boost::bind(&service_handler_t::do_write,
           shared_from_this(),
           bytes_transferred));
     }
@@ -533,7 +537,7 @@ private:
       cancel_io_expiry();
 
       // Post to work_service to executing do_close.
-      work_service().post(boost::bind(&service_handler_type::do_close,
+      work_service().post(boost::bind(&service_handler_t::do_close,
           shared_from_this(),
           e));
     }
@@ -551,7 +555,7 @@ private:
   }
 
   /// Do on_read in work_service thread.
-  void do_read(size_type bytes_transferred)
+  void do_read(size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -562,7 +566,7 @@ private:
   }
 
   /// Do on_write in work_service thread.
-  void do_write(size_type bytes_transferred)
+  void do_write(size_t bytes_transferred)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -633,8 +637,8 @@ private:
   }
 
 private:
-  typedef boost::shared_ptr<work_handler_type> work_handler_ptr;
-  typedef boost::shared_ptr<socket_type> socket_ptr;
+  typedef boost::shared_ptr<work_handler_t> work_handler_ptr;
+  typedef boost::shared_ptr<socket_t> socket_ptr;
   typedef boost::shared_ptr<boost::asio::deadline_timer> timer_ptr;
 
   /// Work handler of the service_handler.
@@ -656,10 +660,10 @@ private:
   unsigned int io_timeout_;
 
   /// The io_service for for asynchronous operations.
-  io_service_type* io_service_;
+  io_service_t* io_service_;
 
   /// The io_service for for executing synchronous works.
-  io_service_type* work_service_;
+  io_service_t* work_service_;
 
   // Flag to indicate that the handler has been stopped and can not do synchronous operations.
   bool stopped_;

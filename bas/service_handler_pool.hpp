@@ -45,24 +45,24 @@ public:
   typedef std::size_t size_type;
 
   /// The type of the service_handler.
-  typedef service_handler<Work_Handler, Socket_Service> service_handler_type;
-  typedef boost::shared_ptr<service_handler_type> service_handler_ptr;
+  typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
+  typedef boost::shared_ptr<service_handler_t> service_handler_ptr;
 
   /// The type of the work_allocator.
-  typedef Work_Allocator work_allocator_type;
-  typedef boost::shared_ptr<work_allocator_type> work_allocator_ptr;
+  typedef Work_Allocator work_allocator_t;
+  typedef boost::shared_ptr<work_allocator_t> work_allocator_ptr;
 
-  /// Construct the service_handler pool.
-  explicit service_handler_pool(work_allocator_type* work_allocator,
-      size_type pool_init_size = BAS_HANDLER_POOL_INIT_SIZE,
-      size_type read_buffer_size = BAS_HANDLER_BUFFER_DEFAULT_SIZE,
-      size_type write_buffer_size = 0,
+  /// Constructor.
+  service_handler_pool(work_allocator_t* work_allocator,
+      size_t pool_init_size = BAS_HANDLER_POOL_INIT_SIZE,
+      size_t read_buffer_size = BAS_HANDLER_BUFFER_DEFAULT_SIZE,
+      size_t write_buffer_size = 0,
       unsigned int session_timeout = BAS_HANDLER_DEFAULT_TIMEOUT,
       unsigned int io_timeout = 0,
-      size_type pool_low_watermark = BAS_HANDLER_POOL_LOW_WATERMARK,
-      size_type pool_high_watermark = BAS_HANDLER_POOL_HIGH_WATERMARK,
-      size_type pool_increment = BAS_HANDLER_POOL_INCREMENT,
-      size_type pool_maximum = BAS_HANDLER_POOL_MAXIMUM)
+      size_t pool_low_watermark = BAS_HANDLER_POOL_LOW_WATERMARK,
+      size_t pool_high_watermark = BAS_HANDLER_POOL_HIGH_WATERMARK,
+      size_t pool_increment = BAS_HANDLER_POOL_INCREMENT,
+      size_t pool_maximum = BAS_HANDLER_POOL_MAXIMUM)
     : mutex_(),
       service_handlers_(),
       work_allocator_(work_allocator),
@@ -84,7 +84,7 @@ public:
     BOOST_ASSERT(pool_high_watermark > pool_low_watermark);
     BOOST_ASSERT(pool_maximum > pool_high_watermark);
     BOOST_ASSERT(pool_increment != 0);
- }
+  }
 
   /// Destruct the pool object.
   ~service_handler_pool()
@@ -128,7 +128,7 @@ public:
   }
 
   /// Put a handler to the pool.
-  void put_handler(service_handler_type* handler_ptr)
+  void put_handler(service_handler_t* handler_ptr)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -147,7 +147,7 @@ public:
   }
 
   /// Get the number of active handlers.
-  size_type get_load(void)
+  size_t get_load(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -156,7 +156,7 @@ public:
   }
 
   /// Get the count of the handlers.
-  size_type handler_count(void)
+  size_t handler_count(void)
   {
     // Need lock in multiple thread model.
     boost::asio::detail::mutex::scoped_lock lock(mutex_);
@@ -165,9 +165,8 @@ public:
   }
 
 private:
-  
   /// Get the allocator for work.
-  work_allocator_type& work_allocator(void)
+  work_allocator_t& work_allocator(void)
   {
     BOOST_ASSERT(work_allocator_.get() != 0);
 
@@ -185,16 +184,16 @@ private:
 
     closed_ = true;
 
-    for (size_type i = 0; i < service_handlers_.size(); ++i)
+    for (size_t i = 0; i < service_handlers_.size(); ++i)
       service_handlers_[i].reset();
 
     service_handlers_.clear();
   }
   
   /// Make a new handler.
-  service_handler_type* make_handler(void)
+  service_handler_t* make_handler(void)
   {
-    return new service_handler_type(work_allocator().make_handler(),
+    return new service_handler_t(work_allocator().make_handler(),
         read_buffer_size_,
         write_buffer_size_,
         session_timeout_,
@@ -202,7 +201,7 @@ private:
   }  
 
   /// Push a handler into the pool.
-  void push_handler(service_handler_type* handler_ptr)
+  void push_handler(service_handler_t* handler_ptr)
   {
     BOOST_ASSERT(handler_ptr != 0);
 
@@ -215,9 +214,9 @@ private:
   }
 
   /// Create handlers to the pool.
-  void create_handler(size_type count)
+  void create_handler(size_t count)
   {
-    for (size_type i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
       push_handler(make_handler());
       ++handler_count_;
@@ -251,7 +250,7 @@ private:
   boost::asio::detail::mutex mutex_;
 
   /// Count of service_handler.
-  size_type handler_count_;
+  size_t handler_count_;
 
   // Flag to indicate that the pool has been closed and all handlers need to be deleted.
   bool closed_;
@@ -263,25 +262,25 @@ private:
   work_allocator_ptr work_allocator_;
 
   /// Preallocated handler number.
-  size_type pool_init_size_;
+  size_t pool_init_size_;
 
   /// Low water mark of the pool.
-  size_type pool_low_watermark_;
+  size_t pool_low_watermark_;
 
   /// High water mark of the pool.
-  size_type pool_high_watermark_;
+  size_t pool_high_watermark_;
 
   /// Increase number of the pool.
-  size_type pool_increment_;
+  size_t pool_increment_;
 
   /// Maximum number of the pool.
-  size_type pool_maximum_;
+  size_t pool_maximum_;
 
   /// The maximum size for asynchronous read operation buffer.
-  size_type read_buffer_size_;
+  size_t read_buffer_size_;
 
   /// The maximum size for asynchronous write operation buffer.
-  size_type write_buffer_size_;
+  size_t write_buffer_size_;
 
   /// The expiry seconds of session.
   unsigned int session_timeout_;

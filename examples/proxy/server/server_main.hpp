@@ -2,8 +2,8 @@
 // server_main.cpp
 // ~~~~~~~~~~~~~~~
 
-#ifndef ECHO_SERVER_MAIN_HPP
-#define ECHO_SERVER_MAIN_HPP
+#ifndef PROXY_SERVER_MAIN_HPP
+#define PROXY_SERVER_MAIN_HPP
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -15,23 +15,25 @@
 
 #include "config.hpp"
 #include "app_param.hpp"
+#include "biz_proxy.hpp"
 
 using namespace bas;
 using namespace bastool;
-using namespace echo;
+using namespace proxy;
 
 class server_main
   : public server_base,
     private boost::noncopyable
 {
 public:
-  typedef biz_echo<bgs_none> biz_handler_t;
+  typedef biz_proxy<bgs_proxy> biz_handler_t;
   typedef server_work<biz_handler_t> server_work_t;
-  typedef server_work_allocator<bgs_none, biz_handler_t> server_work_allocator_t;
+  typedef server_work_allocator<bgs_proxy, biz_handler_t> server_work_allocator_t;
   typedef client_work<biz_handler_t> client_work_t;
   typedef client_work_allocator<biz_handler_t> client_work_allocator_t;
 
   typedef server<server_work_t, server_work_allocator_t> server_t;
+  typedef client<client_work_t, client_work_allocator_t> client_t;
   typedef service_handler_pool<server_work_t, server_work_allocator_t> server_handler_pool_t;
   typedef service_handler_pool<client_work_t, client_work_allocator_t> client_handler_pool_t;
 
@@ -53,7 +55,7 @@ public:
   /// Run the server with block mode.
   void run()
   {
-    if (init() == ECHO_ERR_NONE)
+    if (init() == PROXY_ERR_NONE)
     {
       // Run the server until stopped.
       server_->run();
@@ -65,7 +67,7 @@ public:
   {
     int ret = init();
 
-    if (ret != ECHO_ERR_NONE)
+    if (ret != PROXY_ERR_NONE)
       return ret;
 
     // Run the server with nonblock mode.
@@ -92,13 +94,26 @@ private:
   int init(void)
   {
     if (server_.get() != 0)
-      return ECHO_ERR_NONE;
+      return PROXY_ERR_NONE;
 
     int ret = get_param(config_file_, param_);
-    if (ret != ECHO_ERR_NONE)
+    if (ret != PROXY_ERR_NONE)
       return ret;
+    
+    bgs_.endpoint_ = boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(param_.proxy_ip), param_.proxy_port);
 
-    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(bgs_),
+    client_t* client = new client_t(new client_handler_pool_t(new client_work_allocator_t(),
+                                                              param_.handler_pool_init,
+                                                              param_.read_buffer_size,
+                                                              param_.write_buffer_size,
+                                                              param_.session_timeout,
+                                                              param_.io_timeout,
+                                                              param_.handler_pool_low,
+                                                              param_.handler_pool_high,
+                                                              param_.handler_pool_inc,
+                                                              param_.handler_pool_max));
+
+    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(bgs_, client),
                                                          param_.handler_pool_init,
                                                          param_.read_buffer_size,
                                                          param_.write_buffer_size,
@@ -117,14 +132,14 @@ private:
                                param_.accept_queue_size));
 
     if (server_.get() == 0)
-      return ECHO_ERR_ALLOC_FAILED;
+      return PROXY_ERR_ALLOC_FAILED;
 
-    return ECHO_ERR_NONE;
+    return PROXY_ERR_NONE;
   }
 
 private:
   /// The global storage not used here.
-  bgs_none bgs_;
+  bgs_proxy bgs_;
 
   /// The config file of server.
   std::string config_file_;
@@ -136,5 +151,5 @@ private:
   server_ptr server_; 
 };
 
-#endif // ECHO_SERVER_MAIN_HPP
+#endif // PROXY_SERVER_MAIN_HPP
 
