@@ -17,27 +17,37 @@ namespace proxy {
 
 using namespace bastool;
 
+/// Business global storage for proxy.
 class bgs_proxy
 {
 public:
-  bgs_proxy() {}
-  bgs_proxy(boost::asio::ip::tcp::endpoint& endpoint)
-    : endpoint_(endpoint)
+  /// Constructor.
+  bgs_proxy(const std::string& address,
+      unsigned short port)
+    : endpoint_(boost::asio::ip::address::from_string(address), port)
   {
   }
 
+  /// Not used here.
+  void init()  {}
+  void close() {}
+
+  /// Target server address.
   boost::asio::ip::tcp::endpoint endpoint_;
 };
 
-/// The demo class for handle echo_server business process.
-template<typename Global_Storage>
+/// Class for handle proxy_server business process.
+template<typename Biz_Global_Storage>
 class biz_proxy
 {
 public:
+  typedef boost::shared_ptr<Biz_Global_Storage> bgs_ptr;
+
   /// Constructor.
-  biz_proxy(Global_Storage& bgs)
+  biz_proxy(bgs_ptr bgs)
     : bgs_(bgs)
   {
+    BOOST_ASSERT(bgs_.get () != 0);
   }
 
   /// Main function to process business logical operations.
@@ -47,7 +57,7 @@ public:
     {
       case BAS_STATE_ON_OPEN:
         status.state = BAS_STATE_DO_CLIENT_OPEN;
-        status.endpoint = bgs_.endpoint_;
+        status.endpoint = bgs_->endpoint_;
         break;
 
       case BAS_STATE_ON_CLIENT_OPEN:
@@ -59,12 +69,16 @@ public:
         break;
 
      case BAS_STATE_ON_CLIENT_READ:
-        if (status.ec)
+        if (status.ec || output.space() < input.size())
         {
           status.state = BAS_STATE_DO_CLOSE;
         }
         else
+        {
+          output.clear();
+          memcpy(output.data(), input.data(), input.size());
           status.state = BAS_STATE_DO_WRITE;
+        }
 
         break;
 
@@ -112,8 +126,8 @@ public:
     }
   }
 
-  /// Global storage can be used in process for holding other application resources.
-  Global_Storage& bgs_;
+  /// Business Global storage for holding application resources.
+  bgs_ptr bgs_;
 };
 
 } // namespace proxy

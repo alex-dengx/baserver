@@ -86,20 +86,24 @@ struct status_t
   }
 };
 
-/// Simple class for global storage not used.
+/// Simple business global storage for none resource used.
 class bgs_none
 {
 public:
-  bgs_none() {}
+  bgs_none()   {}
+  void init()  {}
+  void close() {}  
 };
 
-/// The demo class for handle echo_server business process.
-template<typename Global_Storage>
+/// Demo class for handle echo_server business process.
+template<typename Biz_Global_Storage>
 class biz_echo
 {
 public:
+  typedef boost::shared_ptr<Biz_Global_Storage> bgs_ptr;
+
   /// Constructor.
-  biz_echo(Global_Storage& bgs)
+  biz_echo(bgs_ptr bgs)
     : bgs_(bgs)
   {
   }
@@ -155,8 +159,8 @@ public:
     }
   }
 
-  /// Global storage can be used in process for holding other application resources.
-  Global_Storage& bgs_;
+  /// Business Global storage for holding application resources.
+  bgs_ptr bgs_;
 };
 
 /// Object for handle server asynchronous operations.

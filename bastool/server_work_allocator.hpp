@@ -22,7 +22,7 @@ namespace bastool {
 
 using namespace bas;
 
-template<typename Global_Storage, typename Biz_Handler>
+template<typename Biz_Handler, typename Biz_Global_Storage>
 class server_work_allocator
 {
 public:
@@ -33,18 +33,31 @@ public:
   typedef client<client_work_t, client_work_allocator_t> client_t;
   typedef service_handler_pool<client_work_t, client_work_allocator_t> client_handler_pool_t;
   typedef boost::asio::ip::tcp::socket socket_t;
+  typedef boost::shared_ptr<Biz_Global_Storage> bgs_ptr;
+  typedef boost::shared_ptr<client_t> client_ptr;
 
   /// Constructor.
-  server_work_allocator(Global_Storage& bgs,
+  server_work_allocator(Biz_Global_Storage* bgs = 0,
                         client_t* client = 0)
     : bgs_(bgs),
       client_(client)
   {
+    /// Open and allocate resource in bgs.
+    if (bgs_.get() != 0)
+      bgs_->init();
   }
   
   /// Destructor.
   ~server_work_allocator()
   {
+    /// Close and release resource in bgs.
+    if (bgs_.get() != 0)
+      bgs_->close();
+    
+    /// Destroy bgs object.
+    bgs_.reset();
+
+    /// Destroy client object.
     client_.reset();
   }
 
@@ -59,11 +72,11 @@ public:
   }
 
 private:
-  /// The global storage can be used in process for holding other application resources.
-  Global_Storage& bgs_;
+  /// Business Global storage for holding application resources.
+  bgs_ptr bgs_;
 
   /// The client object.
-  boost::shared_ptr<client_t> client_;
+  client_ptr client_;
 };
 
 } // namespace bastool
