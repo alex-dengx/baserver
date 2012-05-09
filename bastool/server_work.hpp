@@ -251,7 +251,7 @@ public:
           {
             // Notify child to read.
             io_buffer(*client_handler_).crunch();
-            client_handler_->parent_post(bas::event(bas::event::read, io_buffer(handler).size()));
+            client_handler_->parent_post(bas::event(bas::event::read));
           }
         }
 
@@ -261,6 +261,8 @@ public:
       case BAS_STATE_DO_CLIENT_WRITE_READ:
         if (client_handler_ != 0)
         {
+          // Clear client buffer here.
+          io_buffer(*client_handler_).clear();
           if (io_buffer(*client_handler_).space() < io_buffer(handler).size())
           {
             // Notify parent for child write error.
@@ -270,21 +272,17 @@ public:
           }
           else
           {
-            io_buffer(*client_handler_).crunch();
-            memcpy(io_buffer(*client_handler_).data() + io_buffer(*client_handler_).size(),
-                io_buffer(handler).data(),
-                io_buffer(handler).size());
-
+            memcpy(io_buffer(*client_handler_).data(), io_buffer(handler).data(), io_buffer(handler).size());
             io_buffer(*client_handler_).produce(io_buffer(handler).size());
             
             if (status_.state == BAS_STATE_DO_CLIENT_WRITE_READ)
             {
               // Notify child to write and read.
-              client_handler_->parent_post(bas::event(bas::event::write_read, io_buffer(handler).size()));
+              client_handler_->parent_post(bas::event(bas::event::write_read));
             }
             else
               // Notify child to write.
-              client_handler_->parent_post(bas::event(bas::event::write, io_buffer(handler).size()));
+              client_handler_->parent_post(bas::event(bas::event::write));
           }
         }
 
@@ -367,6 +365,7 @@ public:
 
       case bas::event::read:
         status_.set(BAS_STATE_ON_CLIENT_READ, event.value, event.ec);
+        // Process should call io_buffer(handler).clear() when need.
         biz_->process(status_, io_buffer(*client_handler_), io_buffer(handler));
         do_io(handler);
         break;
