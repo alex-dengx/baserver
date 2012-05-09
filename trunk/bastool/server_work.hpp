@@ -250,7 +250,6 @@ public:
           else
           {
             // Notify child to read.
-            io_buffer(*client_handler_).crunch();
             client_handler_->parent_post(bas::event(bas::event::read));
           }
         }
@@ -332,6 +331,7 @@ public:
   {
     status_.set(BAS_STATE_ON_WRITE, bytes_transferred);
     io_buffer(handler).consume(bytes_transferred);
+    io_buffer(handler).crunch();
     biz_->process(status_, io_buffer(handler), io_buffer(handler));
     do_io(handler);
   }
