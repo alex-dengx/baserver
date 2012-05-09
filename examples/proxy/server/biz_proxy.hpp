@@ -69,7 +69,7 @@ public:
         break;
 
      case BAS_STATE_ON_CLIENT_READ:
-        if (status.ec || output.space() < input.size())
+        if (status.ec || output.capacity() < input.size())
         {
           status.state = BAS_STATE_DO_CLOSE;
         }
@@ -77,6 +77,7 @@ public:
         {
           output.clear();
           memcpy(output.data(), input.data(), input.size());
+          output.produce(input.size());
           status.state = BAS_STATE_DO_WRITE;
         }
 
