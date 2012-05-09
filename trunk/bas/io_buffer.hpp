@@ -31,12 +31,30 @@ public:
   /// Define type reference of std::size_t.
   typedef std::size_t size_t;
 
-  /// Constructor.
-  explicit io_buffer(size_t capacity)
+  /// Default constructor.
+  io_buffer(size_t capacity)
     : begin_offset_(0),
       end_offset_(0),
       buffer_(capacity)
   {
+  }
+  
+  /// Copy constructor.
+  io_buffer(const io_buffer& other)
+    : buffer_(other.buffer_),
+      begin_offset_(other.begin_offset_),
+      end_offset_(other.end_offset_)
+  {
+  }
+
+  /// Assign from another.
+  io_buffer& operator= (const io_buffer& other)
+  {
+    buffer_ = other.buffer_;
+    begin_offset_ = other.begin_offset_;
+    end_offset_ = other.end_offset_;
+
+    return *this;
   }
 
   /// Clear the buffer.
