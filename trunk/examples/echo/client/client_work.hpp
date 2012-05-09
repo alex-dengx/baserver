@@ -51,6 +51,7 @@ public:
 
   void on_open(client_handler_type& handler)
   {
+    handler.read_buffer().clear();
     if (pause_time_ != 0)
     {
       timer_.reset(new boost::asio::deadline_timer(handler.io_service()));
@@ -66,13 +67,7 @@ public:
 
   void on_read(client_handler_type& handler, std::size_t bytes_transferred)
   {
-    if (mlen != bytes_transferred || memcmp(handler.read_buffer().data(), msg, mlen) != 0)
-    {
-      error_count_->error();
-      //std::cout << "Receive data error. length is [" << bytes_transferred << "] expect is [" << mlen << "]\n";
-      //std::cout.flush();
-    }
-
+    handler.read_buffer().produce(bytes_transferred);
     handler.close();
   }
 
@@ -94,33 +89,13 @@ public:
     
     switch (e.value())
     {
-      // Operation successfully completed.
-      case 0:
-      case boost::asio::error::eof:
-        //std::cout << "connection is closed normally.\n";
-        //std::cout.flush();
-        break;
-
-      // Operation timed out.
       case boost::asio::error::timed_out:
         error_count_->timeout();
-        //std::cout << "client error " << e << " message " << e.message() << "\n";
-        //std::cout.flush();
-        break;
-
-      // Connection breaked.
-      case boost::asio::error::connection_aborted:
-      case boost::asio::error::connection_reset:
-      case boost::asio::error::connection_refused:
+      
       default:
-        error_count_->error();
-        break;
-
-      // Other error.
-      case boost::asio::error::no_buffer_space:
-        //std::cout << "client error " << e << " message " << e.message() << "\n";
-        //std::cout.flush();
-        break;
+        if (mlen != handler.read_buffer().size() || \
+            memcmp(handler.read_buffer().data(), msg, mlen) != 0)
+          error_count_->error();
     }
   }
 
