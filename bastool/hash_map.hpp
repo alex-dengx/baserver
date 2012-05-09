@@ -299,7 +299,7 @@ private:
   }
 
   /// Get hash value for byte_string.
-  size_t calculate_hash_value(byte_string& v)
+  size_t calculate_hash_value(const byte_string& v)
   {
     return v.hash_value();
   }
