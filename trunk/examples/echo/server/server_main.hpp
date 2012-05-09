@@ -27,7 +27,7 @@ class server_main
 public:
   typedef biz_echo<bgs_none> biz_handler_t;
   typedef server_work<biz_handler_t> server_work_t;
-  typedef server_work_allocator<bgs_none, biz_handler_t> server_work_allocator_t;
+  typedef server_work_allocator<biz_handler_t, bgs_none> server_work_allocator_t;
   typedef client_work<biz_handler_t> client_work_t;
   typedef client_work_allocator<biz_handler_t> client_work_allocator_t;
 
@@ -40,8 +40,7 @@ public:
   /// Constructor.
   server_main(const std::string& config_file)
     : config_file_(config_file),
-      server_(),
-      bgs_()
+      server_()
   {
   }
 
@@ -98,7 +97,7 @@ private:
     if (ret != ECHO_ERR_NONE)
       return ret;
 
-    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(bgs_),
+    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(0),
                                                          param_.handler_pool_init,
                                                          param_.read_buffer_size,
                                                          param_.write_buffer_size,
@@ -123,9 +122,6 @@ private:
   }
 
 private:
-  /// The global storage not used here.
-  bgs_none bgs_;
-
   /// The config file of server.
   std::string config_file_;
 

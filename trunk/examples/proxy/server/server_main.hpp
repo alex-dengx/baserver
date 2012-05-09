@@ -28,7 +28,7 @@ class server_main
 public:
   typedef biz_proxy<bgs_proxy> biz_handler_t;
   typedef server_work<biz_handler_t> server_work_t;
-  typedef server_work_allocator<bgs_proxy, biz_handler_t> server_work_allocator_t;
+  typedef server_work_allocator<biz_handler_t, bgs_proxy> server_work_allocator_t;
   typedef client_work<biz_handler_t> client_work_t;
   typedef client_work_allocator<biz_handler_t> client_work_allocator_t;
 
@@ -42,8 +42,7 @@ public:
   /// Constructor.
   server_main(const std::string& config_file)
     : config_file_(config_file),
-      server_(),
-      bgs_()
+      server_()
   {
   }
 
@@ -99,8 +98,8 @@ private:
     int ret = get_param(config_file_, param_);
     if (ret != PROXY_ERR_NONE)
       return ret;
-    
-    bgs_.endpoint_ = boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(param_.proxy_ip), param_.proxy_port);
+
+    bgs_proxy* bgs = new bgs_proxy(param_.proxy_ip, param_.proxy_port);
 
     client_t* client = new client_t(new client_handler_pool_t(new client_work_allocator_t(),
                                                               param_.handler_pool_init,
@@ -113,7 +112,7 @@ private:
                                                               param_.handler_pool_inc,
                                                               param_.handler_pool_max));
 
-    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(bgs_, client),
+    server_.reset(new server_t(new server_handler_pool_t(new server_work_allocator_t(bgs, client),
                                                          param_.handler_pool_init,
                                                          param_.read_buffer_size,
                                                          param_.write_buffer_size,
@@ -138,9 +137,6 @@ private:
   }
 
 private:
-  /// The global storage not used here.
-  bgs_proxy bgs_;
-
   /// The config file of server.
   std::string config_file_;
 

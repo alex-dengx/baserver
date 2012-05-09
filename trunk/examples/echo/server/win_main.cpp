@@ -21,7 +21,9 @@
 
 #include "server_main.hpp"
 
-std::string echo_service_name = "echo_server";
+std::string service_name = "echo_server";
+std::string display_name = "echo_server";
+std::string description  = "echo server";
 
 boost::function0<void> console_ctrl_function;
 
@@ -47,7 +49,7 @@ int main(int argc, char * argv[ ])
     if (memcmp(argv[1], "/service", 8) == 0 && argc == 3)
     {
       server_main server(argv[2]);
-      bastool::win_service service(&server, echo_service_name);
+      bastool::win_service service(&server, service_name);
       service.run(&service);
       return 0;
     }
@@ -56,29 +58,29 @@ int main(int argc, char * argv[ ])
       char bin_path[MAX_PATH];
       memcpy(bin_path, "/service ", 9);
       memcpy(bin_path + 9, argv[2], strlen(argv[2]) + 1);
-      DWORD ret = bastool::win_service::install(echo_service_name, "echo server", "echo server base on bas", bin_path);
+      DWORD ret = bastool::win_service::install(service_name, display_name, description, bin_path);
       if (ret == 0)
       {
-        std::cout << "Service echo_server install success.\n";
+        std::cout << "Service " << service_name << " install success.\n";
         return 0;
       }
       else
       {
-        std::cerr << "Service echo_server install failed. errno = " << ret << "\n";
+        std::cerr << "Service " << service_name << " install failed. errno = " << ret << "\n";
         return ret;
       }
     }
     else if (memcmp(argv[1], "/delete", 7) == 0)
     {
-      DWORD ret = bastool::win_service::remove(echo_service_name);
+      DWORD ret = bastool::win_service::remove(service_name);
       if (ret == 0)
       {
-        std::cout << "Service echo_server delete success.\n";
+        std::cout << "Service " << service_name << " delete success.\n";
         return 0;
       }
       else
       {
-        std::cerr << "Service echo_server delete failed. errno = " << ret << "\n";
+        std::cerr << "Service " << service_name << " delete failed. errno = " << ret << "\n";
         return ret;
       }
     }
@@ -97,10 +99,10 @@ int main(int argc, char * argv[ ])
     }
   }
 
-  std::cerr << "Usage: echo_server <arguments>\n";
-  std::cerr << "  echo_server [/install] [config_file] : install echo_server service.\n";
-  std::cerr << "  echo_server [/delete]                : delete echo_server service.\n";
-  std::cerr << "  echo_server [config_file]            : run as application.\n";
+  std::cerr << "Usage: " << service_name << " <arguments>\n";
+  std::cerr << "  " << service_name << " [/install] [config_file] : install " << service_name << " service.\n";
+  std::cerr << "  " << service_name << " [/delete]                : delete " << service_name << " service.\n";
+  std::cerr << "  " << service_name << " [config_file]            : run as application.\n";
   return 1;
 }
 
