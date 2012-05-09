@@ -102,7 +102,7 @@ public:
   }
 
   /// Get hash value.
-  size_t hash_value()
+  const size_t hash_value() const
   {
     return boost::hash_range(buffer_.begin(), buffer_.end());
   }
