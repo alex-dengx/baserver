@@ -72,7 +72,7 @@ public:
     // Run the server with nonblock mode.
     server_->start();
 
-    return ret;
+    return 0;
   }
     
   /// Start the server with nonblock mode.

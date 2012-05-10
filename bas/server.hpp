@@ -124,7 +124,6 @@ public:
   }
 
 private:
-
   /// Start server with given mode.
   void start(bool block)
   {
@@ -196,13 +195,21 @@ private:
     }
   }
 
-  /// Start to accept one connection.
+  /// Start an asynchronous accept, can be call from any thread.
   void accept_one()
+  {
+    acceptor_.get_io_service().dispatch(boost::bind(&server::accept_one_i,
+        this));
+  }
+
+  /// Start an asynchronous accept in io_service thread.
+  void accept_one_i()
   {
     // Get new handler for accept.
     service_handler_ptr handler = service_handler_pool_->get_service_handler(io_service_pool_.get_io_service(),
         work_service_pool_.get_io_service(service_handler_pool_->get_load()));
 
+    // Wait for some seconds to accept next connection if exceed max connection number.
     if (handler.get() == 0)
     {
       timer_.expires_from_now(boost::posix_time::seconds(BAS_ACCEPT_DELAY_SECONDS));
@@ -213,7 +220,7 @@ private:
       return;
     }
 
-    // Use new handler to accept, and bind with acceptor's io_service.
+    // Use new handler to accept.
     acceptor_.async_accept(handler->socket().lowest_layer(),
         boost::bind(&server::handle_accept,
             this,
@@ -230,8 +237,8 @@ private:
       // Start the first operation of the current handler.
       handler->start();
 
-      // Accept new connection.
-      accept_one();
+      // Accept new connection in io_service thread.
+      accept_one_i();
     }
     else
     {
@@ -252,8 +259,8 @@ private:
     if (e == boost::asio::error::operation_aborted)
       return;
 
-    // Accept new connection.
-    accept_one();
+     // Accept new connection in io_service thread.
+    accept_one_i();
   }
 
 private:
