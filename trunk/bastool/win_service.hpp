@@ -65,7 +65,12 @@ public:
     };
 
     // Use ANSI version.
-    return (::StartServiceCtrlDispatcherA(service_table) != 0);
+    DWORD ret = ::StartServiceCtrlDispatcherA(service_table);
+
+    // Erase the service from hash map.
+    services_.erase(service->get_service_name());
+
+    return (ret != 0);
   }
   
   static DWORD install(const std::string& service_name,
