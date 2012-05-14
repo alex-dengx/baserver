@@ -264,10 +264,12 @@ public:
 
   /// Clean invalid entrys in the map.
   template<typename Validator, typename Var_arg>
-  void clean(Validator& op, Var_arg var_arg)
+  size_t clean(Validator& op, Var_arg var_arg)
   {
+    size_t count = 0;
+    
     if ((mutexs_ == NULL) || (buckets_.size() != num_buckets_))
-      return;
+      return count;
 
     for (size_t i = 0; i < num_buckets_; ++i)
     {
@@ -278,16 +280,19 @@ public:
       size_t bucket_size = bucket.size();
       for (size_t j = 0; j < bucket_size; ++j)
       {
-        if (op.valid_check(bucket[j].first, bucket[j].second, var_arg))
+        if (!op.valid_check(bucket[j].first, bucket[j].second, var_arg))
         {
           if (j != bucket_size - 1)
             bucket[j] = bucket[bucket_size - 1];
 
           bucket.pop_back();
           --bucket_size;
+          ++count;
         }
       }
     }
+    
+    return count;
   }
 
 private:
