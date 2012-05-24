@@ -195,7 +195,8 @@ public:
     : biz_(biz),
       client_(client),
       client_handler_(0),
-      status_()
+      status_(),
+      passive_close_(false)
   {
     BOOST_ASSERT(biz != 0);
   }
@@ -234,7 +235,9 @@ public:
           if (client_handler_ != 0)
           {
             // Notify child to close.
-            client_handler_->parent_post(bas::event(bas::event::close));
+            if (!passive_close_)
+              client_handler_->parent_post(bas::event(bas::event::close));
+
             client_handler_ = 0;
           }
         
@@ -296,12 +299,6 @@ public:
 
       case BAS_STATE_DO_CLOSE:
       default:
-        if (client_handler_ != 0)
-        {
-          client_handler_->parent_post(event(event::close));
-          client_handler_ = 0;
-        }
-
         handler.close();
 
         break;
@@ -310,6 +307,9 @@ public:
 
   void on_set_child(server_handler_t& handler, client_handler_t* client_handler)
   {
+    BOOST_ASSERT(client_handler != 0);
+
+    passive_close_ = false;
     client_handler_ = client_handler;
   }
 
@@ -347,7 +347,10 @@ public:
   {
     if (client_handler_ != 0)
     {
-      client_handler_->parent_post(bas::event(bas::event::close));
+      // Notify child to close.
+      if (!passive_close_)
+        client_handler_->parent_post(bas::event(bas::event::close, 0, ec));
+
       client_handler_ = 0;
     }
 
@@ -384,7 +387,8 @@ public:
         break;
 
       case bas::event::close:
-        client_handler_ = 0;
+        // The server_handler is requesting to close by client_handler.
+        passive_close_ = true;
         status_.set(BAS_STATE_ON_CLIENT_CLOSE, event.value, event.ec);
         biz_->process(status_, io_buffer(handler), io_buffer(handler));
         do_io(handler);
@@ -404,6 +408,9 @@ private:
 
   /// The client handler.
   client_handler_t* client_handler_;
+
+  /// Flag for passive close.
+  bool passive_close_;
 };
 
 } // namespace bastool

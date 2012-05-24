@@ -37,7 +37,8 @@ public:
   /// Constructor.
   client_work()
   : server_handler_(0),
-    event_()
+    event_(),
+    passive_close_(false)
   {
   }
   
@@ -50,6 +51,9 @@ public:
   
   void on_set_parent(client_handler_t& handler, server_handler_t* server_handler)
   {
+    BOOST_ASSERT(server_handler != 0);
+    
+    passive_close_ = false;
     server_handler_ = server_handler;
   }
 
@@ -92,7 +96,10 @@ public:
   {
     if (server_handler_ != 0)
     {
-      server_handler_->child_post(bas::event(bas::event::close, 0, ec));
+      // Notify parent to close.
+      if (!passive_close_)
+        server_handler_->child_post(bas::event(bas::event::close, 0, ec));
+
       server_handler_ = 0;
     }
   }
@@ -106,7 +113,8 @@ public:
     switch (event_.state)
     {
       case bas::event::close:
-        server_handler_ = 0;
+        // The client_handler is requesting to close by server_handler.
+        passive_close_ = true;
         handler.close();
         break;
 
@@ -131,6 +139,9 @@ private:
   
   /// The event from server_handler.
   event_t event_;
+
+  /// Flag for passive close.
+  bool passive_close_;
 };
 
 } // namespace bastool
