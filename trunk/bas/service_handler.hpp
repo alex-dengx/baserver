@@ -73,6 +73,9 @@ public:
   /// Define type reference of boost::asio::io_service.
   typedef boost::asio::io_service io_service_t;
 
+  /// Define type reference of boost::asio::ip::tcp::endpoint.
+  typedef boost::asio::ip::tcp::endpoint endpoint_t;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
 
@@ -297,11 +300,13 @@ private:
   }
 
   /// Start an asynchronous connect, can be call from any thread.
-  void connect(boost::asio::ip::tcp::endpoint& endpoint)
+  void connect(endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
   {
     io_service().dispatch(boost::bind(&service_handler_t::connect_i,
         shared_from_this(),
-        endpoint));
+        peer_endpoint,
+        local_endpoint));
   }
 
   /// Start the first operation, can be call from any thread.
@@ -321,9 +326,9 @@ private:
   }
 
 private:
-
   /// Start an asynchronous connect from io_service thread.
-  void connect_i(boost::asio::ip::tcp::endpoint& endpoint)
+  void connect_i(endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint)
   {
     BOOST_ASSERT(socket_.get() != 0);
     BOOST_ASSERT(io_service_ != 0);
@@ -331,8 +336,16 @@ private:
 
     // Set timer for session timeout.
     set_session_expiry();
+    
+    if (local_endpoint != endpoint_t())
+    {
+      // Opening and binding lowest_layer socket to the given local endpoint.
+      socket().lowest_layer().open(local_endpoint.protocol());
+      socket().lowest_layer().bind(local_endpoint);
+    }
 
-    socket().lowest_layer().async_connect(endpoint,
+    // Use lowest_layer socket for ssl.
+    socket().lowest_layer().async_connect(peer_endpoint,
         boost::bind(&service_handler_t::handle_connect,
             shared_from_this(),
             boost::asio::placeholders::error));

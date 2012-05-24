@@ -35,6 +35,9 @@ public:
   /// Define type reference of std::size_t.
   typedef std::size_t size_type;
 
+  /// Define type reference of boost::asio::ip::tcp::endpoint.
+  typedef boost::asio::ip::tcp::endpoint endpoint_t;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
   typedef boost::shared_ptr<service_handler_t> service_handler_ptr;
@@ -45,8 +48,7 @@ public:
 
   /// Construct the server to listen on the specified TCP address and port.
   server(service_handler_pool_t* service_handler_pool,
-      const std::string& address,
-      unsigned short port,
+      endpoint_t& local_endpoint,
       size_t io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       size_t work_pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       size_t work_pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
@@ -58,7 +60,7 @@ public:
       work_service_pool_(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
-      endpoint_(boost::asio::ip::address::from_string(address), port),
+      endpoint_(local_endpoint),
       accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
@@ -283,7 +285,7 @@ private:
   boost::asio::deadline_timer timer_;
 
   /// The server endpoint.
-  boost::asio::ip::tcp::endpoint endpoint_;
+  endpoint_t endpoint_;
 
   /// The queue length for async_accept.
   size_t accept_queue_length_;

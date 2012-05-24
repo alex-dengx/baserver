@@ -30,18 +30,15 @@ public:
   typedef bas::service_handler_pool<ssl_client_work, ssl_client_work_allocator, ssl_socket> client_handler_pool_type;
   typedef bas::client<ssl_client_work, ssl_client_work_allocator, ssl_socket> client_type;
 
-  explicit ssl_connections(const std::string& address,
-      unsigned short port,
+  explicit ssl_connections(client_handler_pool_type* service_handler_pool,
+      boost::asio::ip::tcp::endpoint& endpoint,
       std::size_t io_service_pool_size,
       std::size_t work_pool_init_size,
       std::size_t work_pool_high_watermark,
-      std::size_t connection_number,
-      client_handler_pool_type* service_handler_pool)
+      std::size_t connection_number)
     : io_service_pool_(io_service_pool_size),
       work_service_pool_(work_pool_init_size, work_pool_high_watermark),
-      client_(address,
-          port,
-          service_handler_pool),
+      client_(service_handler_pool, endpoint),
       connection_number_(connection_number)
   {
     BOOST_ASSERT(connection_number != 0);

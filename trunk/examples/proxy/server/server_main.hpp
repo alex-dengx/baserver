@@ -92,6 +92,8 @@ private:
   /// Initialize the server objects.
   int init(void)
   {
+    using namespace boost::asio::ip;
+
     if (server_.get() != 0)
       return PROXY_ERR_NONE;
 
@@ -99,7 +101,8 @@ private:
     if (ret != PROXY_ERR_NONE)
       return ret;
 
-    bgs_proxy* bgs = new bgs_proxy(param_.proxy_ip, param_.proxy_port);
+    bgs_proxy* bgs = new bgs_proxy(tcp::endpoint(address::from_string(param_.proxy_ip), param_.proxy_port),
+                                   tcp::endpoint(address::from_string(param_.local_ip), 0));
 
     client_t* client = new client_t(new client_handler_pool_t(new client_work_allocator_t(),
                                                               param_.handler_pool_init,
@@ -122,8 +125,7 @@ private:
                                                          param_.handler_pool_high,
                                                          param_.handler_pool_inc,
                                                          param_.handler_pool_max),
-                               param_.ip,
-                               param_.port,
+                               tcp::endpoint(address::from_string(param_.ip), param_.port),
                                param_.io_thread_size,
                                param_.work_thread_init,
                                param_.work_thread_high,

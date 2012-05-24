@@ -48,6 +48,9 @@ struct status_t
   /// Define type reference of std::size_t.
   typedef std::size_t size_t;
 
+  /// Define type reference of boost::asio::ip::tcp::endpoint.
+  typedef boost::asio::ip::tcp::endpoint endpoint_t;
+
   /// I/O state machine code.
   size_t state;
 
@@ -58,7 +61,10 @@ struct status_t
   boost::system::error_code ec;
 
   /// Target server address.
-  boost::asio::ip::tcp::endpoint endpoint;
+  endpoint_t peer_endpoint;
+
+  /// Local client address.
+  endpoint_t local_endpoint;
 
   /// Default constructor.
   status_t()
@@ -72,7 +78,8 @@ struct status_t
     state = BAS_STATE_NONE;
     bytes_transferred = 0;
     ec = boost::system::error_code();
-    endpoint = boost::asio::ip::tcp::endpoint();
+    peer_endpoint = endpoint_t();
+    local_endpoint = endpoint_t();
   }
 
   /// Set special member to given value.
@@ -232,7 +239,7 @@ public:
           }
         
           if (status_.state == BAS_STATE_DO_CLIENT_OPEN)
-            client_->connect(handler, status_.endpoint);
+            client_->connect(handler, status_.peer_endpoint, status_.local_endpoint);
         }
 
         break;

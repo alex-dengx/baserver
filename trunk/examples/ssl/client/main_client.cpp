@@ -46,17 +46,16 @@ int main(int argc, char* argv[])
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
     typedef bas::service_handler_pool<echo::ssl_client_work, echo::ssl_client_work_allocator, ssl_socket> ssl_client_handler_pool;
 
-    echo::ssl_connections client(argv[1],
-        port,
+    echo::ssl_connections client(new ssl_client_handler_pool(new echo::ssl_client_work_allocator(),
+                                     preallocated_handler_number,
+                                     read_buffer_size,
+                                     0,
+                                     timeout_seconds),
+        boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(argv[1]), port),
         io_pool_size,
         work_pool_init_size,
         work_pool_high_watermark,
-        connection_number,
-        new ssl_client_handler_pool(new echo::ssl_client_work_allocator(),
-            preallocated_handler_number,
-            read_buffer_size,
-            0,
-            timeout_seconds));
+        connection_number);
 
     // Run the client until stopped.
     client.run();
