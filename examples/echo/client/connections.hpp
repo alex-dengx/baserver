@@ -34,8 +34,7 @@ public:
 
   explicit connections(client_handler_pool_type* service_handler_pool,
       error_count* counter,
-      const std::string& address,
-      unsigned short port,
+      boost::asio::ip::tcp::endpoint& endpoint,
       std::size_t io_pool_size,
       std::size_t work_pool_init_size,
       std::size_t work_pool_high_watermark,
@@ -45,7 +44,7 @@ public:
       unsigned int test_times = 10)
     : io_service_pool_(io_pool_size),
       work_service_pool_(work_pool_init_size, work_pool_high_watermark),
-      client_(service_handler_pool, address, port),
+      client_(service_handler_pool, endpoint),
       error_count_(counter),
       io_service_(),
       timer_(io_service_),

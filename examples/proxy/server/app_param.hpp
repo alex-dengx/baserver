@@ -36,6 +36,7 @@ struct app_param
   unsigned int   session_timeout;
   unsigned int   io_timeout;
 
+  std::string    local_ip;
   std::string    proxy_ip;
   unsigned short proxy_port;
 };
@@ -73,8 +74,9 @@ static int get_param(const std::string& config_file,
     ("server.session_timeout"       , bpo::value<unsigned int  >()->default_value(  30), "")
     ("server.io_timeout"            , bpo::value<unsigned int  >()->default_value(   0), "")
 
-    ("proxy.ip"                     , bpo::value<std::string   >()->default_value(""  ), "")
-    ("proxy.port"                   , bpo::value<unsigned short>()->default_value(2012), "")
+    ("proxy.local_ip"               , bpo::value<std::string   >()->default_value(""  ), "")
+    ("proxy.peer_ip"                , bpo::value<std::string   >()->default_value(""  ), "")
+    ("proxy.peer_port"              , bpo::value<unsigned short>()->default_value(2012), "")
     ;
 
   bpo::store(bpo::parse_config_file(fin, opt_desc, true), var_map);
@@ -100,8 +102,9 @@ static int get_param(const std::string& config_file,
   param.session_timeout       = var_map["server.session_timeout"      ].as<unsigned int>();
   param.io_timeout            = var_map["server.io_timeout"           ].as<unsigned int>();
 
-  param.proxy_ip              = var_map["proxy.ip"                    ].as<std::string>();
-  param.proxy_port            = var_map["proxy.port"                  ].as<unsigned short>();
+  param.local_ip              = var_map["proxy.local_ip"              ].as<std::string>();
+  param.proxy_ip              = var_map["proxy.peer_ip"               ].as<std::string>();
+  param.proxy_port            = var_map["proxy.peer_port"             ].as<unsigned short>();
 
   return PROXY_ERR_NONE;
 }

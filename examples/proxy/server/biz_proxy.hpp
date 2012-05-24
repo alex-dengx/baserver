@@ -21,10 +21,14 @@ using namespace bastool;
 class bgs_proxy
 {
 public:
+  /// Define type reference of boost::asio::ip::tcp::endpoint.
+  typedef boost::asio::ip::tcp::endpoint endpoint_t;
+
   /// Constructor.
-  bgs_proxy(const std::string& address,
-      unsigned short port)
-    : endpoint_(boost::asio::ip::address::from_string(address), port)
+  bgs_proxy(endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
+    : peer_endpoint_(peer_endpoint),
+      local_endpoint_(local_endpoint)
   {
   }
 
@@ -32,8 +36,11 @@ public:
   void init()  {}
   void close() {}
 
-  /// Target server address.
-  boost::asio::ip::tcp::endpoint endpoint_;
+  /// The client endpoint.
+  endpoint_t local_endpoint_;
+
+  /// The server endpoint.
+  endpoint_t peer_endpoint_;
 };
 
 /// Class for handle proxy_server business process.
@@ -57,7 +64,8 @@ public:
     {
       case BAS_STATE_ON_OPEN:
         status.state = BAS_STATE_DO_CLIENT_OPEN;
-        status.endpoint = bgs_->endpoint_;
+        status.peer_endpoint  = bgs_->peer_endpoint_;
+        status.local_endpoint = bgs_->local_endpoint_;
         break;
 
       case BAS_STATE_ON_CLIENT_OPEN:

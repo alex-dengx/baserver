@@ -33,6 +33,8 @@ int main(int argc, char* argv[])
       return 1;
     }
 
+    using namespace boost::asio::ip;
+
     // Initialise server.
     unsigned short port = boost::lexical_cast<unsigned short>(argv[2]);
     std::size_t io_pool_size = boost::lexical_cast<std::size_t>(argv[3]);
@@ -57,8 +59,7 @@ int main(int argc, char* argv[])
                                  session_timeout,
                                  io_timeout),
         &counter,
-        argv[1],
-        port,
+        tcp::endpoint(address::from_string(argv[1]), port),
         io_pool_size,
         work_pool_init_size,
         work_pool_high_watermark,

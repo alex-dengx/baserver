@@ -40,12 +40,13 @@ public:
   typedef service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> service_handler_pool_t;
   typedef boost::shared_ptr<service_handler_pool_t> service_handler_pool_ptr;
 
-  /// Construct the client object for connect to specified TCP address and port.
+  /// Construct the client object with given endpoint.
   client(service_handler_pool_t* service_handler_pool,
-      const std::string& address,
-      unsigned short port)
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
     : service_handler_pool_(service_handler_pool),
-      endpoint_(boost::asio::ip::address::from_string(address), port)
+      peer_endpoint_(peer_endpoint),
+      local_endpoint_(local_endpoint)
   {
     BOOST_ASSERT(service_handler_pool != 0);
 
@@ -53,7 +54,7 @@ public:
     service_handler_pool_->init();
   }
 
-  /// Construct the client object for connect to specified TCP address and port.
+  /// Construct the client object.
   client(service_handler_pool_t* service_handler_pool)
     : service_handler_pool_(service_handler_pool)
   {
@@ -73,10 +74,11 @@ public:
     service_handler_pool_.reset();
   }
 
-  /// Make an connection with given io_service and work_service.
+  /// Establish a connection with given io_service and work_service.
   bool connect(io_service_t& io_service,
       io_service_t& work_service,
-      endpoint_t& endpoint)
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
@@ -86,15 +88,16 @@ public:
       return false;
 
     // Use new handler to connect.
-    new_handler->connect(endpoint);
+    new_handler->connect(peer_endpoint, local_endpoint);
 
     return true;
   }
 
-  /// Make an connection with the given parent_handler.
+  /// Establish a connection with the given parent_handler.
   template<typename Parent_Handler>
   bool connect(Parent_Handler& parent_handler,
-      endpoint_t& endpoint)
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
   {
     // Get new handler for connect.
     service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler.io_service(),
@@ -108,59 +111,36 @@ public:
     new_handler->set_parent(&parent_handler);
     
     // Use new handler to connect.
-    new_handler->connect(endpoint);
+    new_handler->connect(peer_endpoint, local_endpoint);
 
     return true;
   }
 
-  /// Make an connection with given io_service and work_service.
+  /// Establish a connection with given io_service and work_service.
   bool connect(io_service_t& io_service,
       io_service_t& work_service)
   {
     // Connect with the internal endpoint.
-    return connect(io_service, work_service, endpoint_);
+    return connect(io_service, work_service, peer_endpoint_, local_endpoint_);
   }
 
-  /// Make an connection to specific host with given io_service and work_service.
-  bool connect(io_service_t& io_service,
-      io_service_t& work_service,
-      const std::string& address,
-      unsigned short port)
-  {
-    // Prepare endpoint for connect.
-    endpoint_t endpoint(boost::asio::ip::address::from_string(address), port);
-
-    // Connect with the given endpoint.
-    return connect(io_service, work_service, endpoint);
-  }
-
-  /// Make an connection with the given parent_handler.
+  /// Establish a connection with the given parent_handler.
   template<typename Parent_Handler>
   bool connect(Parent_Handler& parent_handler)
   {
     // Connect with the internal endpoint.
-    return connect(parent_handler, endpoint_);
-  }
-
-  /// Make an connection to specific host with the given parent_handler.
-  template<typename Parent_Handler>
-  bool connect(Parent_Handler& parent_handler,
-      const std::string& address,
-      unsigned short port)
-  {
-    // Prepare endpoint for connect.
-    endpoint_t endpoint(boost::asio::ip::address::from_string(address), port);
-
-    // Connect with the given endpoint.
-    return connect(parent_handler, endpoint);
+    return connect(parent_handler, peer_endpoint_, local_endpoint_);
   }
 
 private:
   /// The pool of service_handler objects.
   service_handler_pool_ptr service_handler_pool_;
 
+  /// The client endpoint.
+  endpoint_t local_endpoint_;
+
   /// The server endpoint.
-  endpoint_t endpoint_;
+  endpoint_t peer_endpoint_;
 };
 
 } // namespace bas
