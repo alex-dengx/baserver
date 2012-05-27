@@ -93,6 +93,27 @@ public:
     return true;
   }
 
+  /// Establish a connection with given io_service and work_service and per_conection_data.
+  template<typename Per_connection_data>
+  bool connect(io_service_t& io_service,
+      io_service_t& work_service,
+      Per_connection_data& data,
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
+  {
+   // Get new handler for connect.
+    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(io_service,
+        work_service);
+
+    if (new_handler.get() == 0)
+      return false;
+
+    // Use new handler to connect.
+    new_handler->connect(data, peer_endpoint, local_endpoint);
+
+    return true;
+  }
+
   /// Establish a connection with the given parent_handler.
   template<typename Parent_Handler>
   bool connect(Parent_Handler& parent_handler,
@@ -116,6 +137,30 @@ public:
     return true;
   }
 
+  /// Establish a connection with the given parent_handler and per_conection_data.
+  template<typename Parent_Handler, typename Per_connection_data>
+  bool connect(Parent_Handler& parent_handler,
+      Per_connection_data& data,
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
+  {
+    // Get new handler for connect.
+    service_handler_ptr new_handler = service_handler_pool_->get_service_handler(parent_handler.io_service(),
+        parent_handler.work_service());
+
+    if (new_handler.get() == 0)
+      return false;
+
+    // Execute in work_thread, because connect will be called in the same thread.
+    parent_handler.set_child(new_handler.get());
+    new_handler->set_parent(&parent_handler);
+    
+    // Use new handler to connect.
+    new_handler->connect(data, peer_endpoint, local_endpoint);
+
+    return true;
+  }
+
   /// Establish a connection with given io_service and work_service.
   bool connect(io_service_t& io_service,
       io_service_t& work_service)
@@ -124,12 +169,31 @@ public:
     return connect(io_service, work_service, peer_endpoint_, local_endpoint_);
   }
 
+  /// Establish a connection with given io_service and work_service and per_conection_data.
+  template<typename Per_connection_data>
+  bool connect(io_service_t& io_service,
+      io_service_t& work_service,
+      Per_connection_data& data)
+  {
+    // Connect with the internal endpoint.
+    return connect(io_service, work_service, data, peer_endpoint_, local_endpoint_);
+  }
+
   /// Establish a connection with the given parent_handler.
   template<typename Parent_Handler>
   bool connect(Parent_Handler& parent_handler)
   {
     // Connect with the internal endpoint.
     return connect(parent_handler, peer_endpoint_, local_endpoint_);
+  }
+
+  /// Establish a connection with the given parent_handler and per_conection_data.
+  template<typename Parent_Handler, typename Per_connection_data>
+  bool connect(Parent_Handler& parent_handler,
+      Per_connection_data& data)
+  {
+    // Connect with the internal endpoint.
+    return connect(parent_handler, data, peer_endpoint_, local_endpoint_);
   }
 
 private:
