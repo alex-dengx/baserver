@@ -309,6 +309,21 @@ private:
         local_endpoint));
   }
 
+  /// Start an asynchronous connect, can be call from any thread.
+  template<typename Per_connection_data>
+  void connect(Per_connection_data& data,
+      endpoint_t& peer_endpoint,
+      endpoint_t& local_endpoint = endpoint_t())
+  {
+    // Set per_connection_data.
+    work_handler_->set_data(data);
+
+    io_service().dispatch(boost::bind(&service_handler_t::connect_i,
+        shared_from_this(),
+        peer_endpoint,
+        local_endpoint));
+  }
+
   /// Start the first operation, can be call from any thread.
   void start()
   {
