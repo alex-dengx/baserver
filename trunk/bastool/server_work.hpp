@@ -242,7 +242,8 @@ public:
           }
         
           if (status_.state == BAS_STATE_DO_CLIENT_OPEN)
-            client_->connect(handler, status_.peer_endpoint, status_.local_endpoint);
+            if (!client_->connect(handler, status_.peer_endpoint, status_.local_endpoint))
+              handler.close();
         }
 
         break;

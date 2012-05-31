@@ -44,6 +44,12 @@ public:
   /// Define type reference of std::size_t.
   typedef std::size_t size_type;
 
+  /// Define type reference of boost::asio::detail::mutex.
+  typedef boost::asio::detail::mutex mutex_t;
+
+  /// Define type reference of boost::asio::detail::mutex::scoped_lock.
+  typedef boost::asio::detail::mutex::scoped_lock scoped_lock_t;
+
   /// The type of the service_handler.
   typedef service_handler<Work_Handler, Socket_Service> service_handler_t;
   typedef boost::shared_ptr<service_handler_t> service_handler_ptr;
@@ -76,7 +82,7 @@ public:
       pool_increment_(pool_increment),
       pool_maximum_(pool_maximum),
       handler_count_(0),
-      closed_(false)
+      closed_(true)
   {
     BOOST_ASSERT(work_allocator != 0);
     BOOST_ASSERT(pool_init_size != 0);
@@ -92,14 +98,17 @@ public:
     work_allocator_.reset();
   }
 
-  /// Create preallocated handler to the pool.
+  /// Create preallocated handlers to the pool.
   ///   Note: shared_from_this() can't be used in the constructor.
   void init(void)
   {
-    // Create preallocated handler to the pool.
-    create_handler(pool_init_size_);
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
 
     closed_ = false;
+
+    // Create preallocated handlers to the pool.
+    create_handler(pool_init_size_);
   }
 
   /// Release all handlers in the pool.
@@ -130,27 +139,21 @@ public:
   /// Put a handler to the pool.
   void put_handler(service_handler_t* handler_ptr)
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+    BOOST_ASSERT(handler_ptr != 0);
 
-    // If the pool has exceed high water mark or been closed, delete this handler.
-    if (closed_ || (service_handlers_.size() >= pool_high_watermark_))
-    {
-      delete handler_ptr;
-      --handler_count_;
-
-      return;
-    }
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
 
     // Push this handler into the pool.
-    push_handler(handler_ptr);
+    if (!push_handler(handler_ptr))
+      --handler_count_;
   }
 
   /// Get the number of active handlers.
   size_t get_load(void)
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
 
     return (handler_count_ - service_handlers_.size());
   }
@@ -158,8 +161,8 @@ public:
   /// Get the count of the handlers.
   size_t handler_count(void)
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
 
     return handler_count_;
   }
@@ -176,9 +179,9 @@ private:
   /// Release handlers in the pool.
   void clear(void)
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
-    
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
+
     if (closed_)
       return;
 
@@ -201,9 +204,18 @@ private:
   }  
 
   /// Push a handler into the pool.
-  void push_handler(service_handler_t* handler_ptr)
+  bool push_handler(service_handler_t* handler_ptr)
   {
-    BOOST_ASSERT(handler_ptr != 0);
+    if (handler_ptr == 0)
+      return false;
+    
+    // If the pool has exceed high_water_mark or been closed, delete this handler.
+    if (closed_ || (service_handlers_.size() >= pool_high_watermark_))
+    {
+      delete handler_ptr;
+
+      return false;
+    }    
 
     service_handler_ptr service_handler(handler_ptr,
           bind(&service_handler_pool::put_handler,
@@ -211,25 +223,25 @@ private:
               _1));
 
     service_handlers_.push_back(service_handler);
+
+    return true;
   }
 
   /// Create handlers to the pool.
   void create_handler(size_t count)
   {
     for (size_t i = 0; i < count; ++i)
-    {
-      push_handler(make_handler());
-      ++handler_count_;
-    }
+      if (push_handler(make_handler()))
+        ++handler_count_;
   }
 
   /// Get a handler from the pool.
   ///   Caller must check get_handler().get() != 0 for handler count have exceeded maximum.
   service_handler_ptr get_handler(void)
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
-  
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
+
     // Add new handler if the pool is in low water mark and handler count not exceed maximum.
     if (service_handlers_.size() <= pool_low_watermark_ && handler_count_ < pool_maximum_)
       create_handler(pool_increment_);
@@ -246,8 +258,8 @@ private:
   }
 
 private:
-  /// Mutex to protect access to internal data.
-  boost::asio::detail::mutex mutex_;
+  /// Mutex for synchronize access to data.
+  mutex_t mutex_;
 
   /// Count of service_handler.
   size_t handler_count_;
