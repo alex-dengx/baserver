@@ -239,19 +239,22 @@ private:
   ///   Caller must check get_handler().get() != 0 for handler count have exceeded maximum.
   service_handler_ptr get_handler(void)
   {
+    service_handler_ptr service_handler;
+
     // Lock for synchronize access to data.
     scoped_lock_t lock(mutex_);
 
-    // Add new handler if the pool is in low water mark and handler count not exceed maximum.
-    if (service_handlers_.size() <= pool_low_watermark_ && handler_count_ < pool_maximum_)
-      create_handler(pool_increment_);
-
-    // When handler count exceed limited, will return 
-    service_handler_ptr service_handler;
-    if (service_handlers_.size() > 0)
+    if (!closed_)
     {
-      service_handler = service_handlers_.back();
-      service_handlers_.pop_back();
+      // Add new handler if the pool is in low water mark and handler count not exceed maximum.
+      if (service_handlers_.size() <= pool_low_watermark_ && handler_count_ < pool_maximum_)
+        create_handler(pool_increment_);
+
+      if (service_handlers_.size() > 0)
+      {
+        service_handler = service_handlers_.back();
+        service_handlers_.pop_back();
+      }
     }
 
     return service_handler;
