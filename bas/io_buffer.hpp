@@ -33,12 +33,23 @@ public:
 
   /// Default constructor.
   io_buffer(size_t capacity)
-    : begin_offset_(0),
-      end_offset_(0),
-      buffer_(capacity)
+    : buffer_(capacity, 0),
+      begin_offset_(0),
+      end_offset_(0)
   {
   }
-  
+
+  /// Constructor with the specified data.
+  io_buffer(size_t length, byte_t* data)
+    : buffer_(length, 0),
+      begin_offset_(0),
+      end_offset_(length)
+  {
+    BOOST_ASSERT(data != 0);
+
+    memcpy(&buffer_[0], data, length);
+  }
+
   /// Copy constructor.
   io_buffer(const io_buffer& other)
     : buffer_(other.buffer_),
