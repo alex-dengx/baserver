@@ -34,6 +34,12 @@ public:
   /// Define type reference of std::size_t.
   typedef std::size_t size_type;
 
+  /// Define type reference of boost::asio::detail::mutex.
+  typedef boost::asio::detail::mutex mutex_t;
+
+  /// Define type reference of boost::asio::detail::mutex::scoped_lock.
+  typedef boost::asio::detail::mutex::scoped_lock scoped_lock_t;
+
   /// Constructor.
   io_service_pool(size_t pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
       size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
@@ -86,10 +92,10 @@ public:
   }
 
   /// Get work status of the pool.
-  bool is_free(void)
+  bool is_free()
   {
-    // Need lock in multiple thread model.
-    boost::asio::detail::mutex::scoped_lock lock(mutex_);
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
 
     return is_free_;
   }
@@ -118,8 +124,6 @@ public:
   {
     // Allow all operations and handlers to be finished normally,
     //   the work object may be explicitly destroyed.
-
-    // Destroy all work.
     for (size_t i = 0; i < work_.size(); ++i)
       work_[i].reset();
 
@@ -150,7 +154,9 @@ public:
   {
     // Calculate the required number of threads.
     size_t threads_number = load / pool_thread_load_;
-    if ((threads_number > io_services_.size()) && (io_services_.size() < pool_high_watermark_) && !block_)
+    if (!block_ &&                              \
+        threads_number > io_services_.size() && \
+        io_services_.size() < pool_high_watermark_)
     {
       // Create new io_service and start it.
       io_service_ptr io_service(new boost::asio::io_service);
@@ -166,6 +172,26 @@ private:
   typedef boost::shared_ptr<boost::asio::io_service> io_service_ptr;
   typedef boost::shared_ptr<boost::asio::io_service::work> work_ptr;
   typedef boost::shared_ptr<boost::thread> thread_ptr;
+
+  /// Start all io_service objects in the pool.
+  void start(bool block)
+  {
+    if (threads_.size() != 0)
+      return;
+
+    // The pool has not do anything now, reset to true.
+    is_free_ = true;
+
+    // Start all io_service.
+    for (size_t i = 0; i < io_services_.size(); ++i)
+      start_one(io_services_[i]);
+
+    block_ = block;
+
+    // If in block mode, wait for all threads in the pool to exit.
+    if (block_)
+      wait();
+  }
 
   /// Wait for all threads in the pool to exit.
   void wait()
@@ -185,10 +211,10 @@ private:
   void run_service(io_service_ptr io_service)
   {
     // Run the io_service and check executed handler number is zero or not.
-    if ((io_service->run() != 0) && is_free_)
+    if (io_service->run() != 0)
     {
-      // Need lock in multiple thread model.
-      boost::asio::detail::mutex::scoped_lock lock(mutex_);
+      // Lock for synchronize access to data.
+      scoped_lock_t lock(mutex_);
 
       // Some handlers has been executed, set to false.
       is_free_ = false;
@@ -213,26 +239,6 @@ private:
     threads_.push_back(thread);
   }
 
-  /// Start all io_service objects in the pool.
-  void start(bool block)
-  {
-    if (threads_.size() != 0)
-      return;
-
-    // The pool has not do anything now, reset to true.
-    is_free_ = true;
-
-    // Start all io_service.
-    for (size_t i = 0; i < io_services_.size(); ++i)
-      start_one(io_services_[i]);
-
-    block_ = block;
-
-    // If in block mode, wait for all threads in the pool to exit.
-    if (block)
-      wait();
-  }
-
   /// Force stop all io_service objects in the pool.
   void force_stop(void)
   {
@@ -242,8 +248,8 @@ private:
   }
 
 private:
-  /// Mutex to protect access to internal data.
-  boost::asio::detail::mutex mutex_;
+  /// Mutex for synchronize access to data.
+  mutex_t mutex_;
 
   /// Work status of the pool.
   bool is_free_;
