@@ -33,17 +33,16 @@ public:
   typedef bas::client<client_work, client_work_allocator> client_type;
 
   explicit connections(client_handler_pool_type* service_handler_pool,
-      error_count* counter,
+      error_count& counter,
       boost::asio::ip::tcp::endpoint& endpoint,
       std::size_t io_pool_size,
-      std::size_t work_pool_init_size,
-      std::size_t work_pool_high_watermark,
+      std::size_t work_pool_size,
       unsigned int pause_seconds,
       std::size_t connection_number = 1000,
       unsigned int wait_seconds = 10,
       unsigned int test_times = 10)
     : io_service_pool_(io_pool_size),
-      work_service_pool_(work_pool_init_size, work_pool_high_watermark),
+      work_service_pool_(work_pool_size, work_pool_size),
       client_(service_handler_pool, endpoint),
       error_count_(counter),
       io_service_(),
@@ -80,15 +79,15 @@ public:
 
       std::cout << "Established connections " << counts << ", time " << time_long_.total_milliseconds() << " ms. ";
       std::cout << "average " << time_long_.total_milliseconds()/(i+1) << " ms.\n";
-      if (error_count_->get_timeout() != 0)
+      if (error_count_.get_timeout() != 0)
       {
-        std::cout << "Total " << error_count_->get_timeout() << " connections timeout. ";
-        std::cout << "everage " << error_count_->get_timeout()/(i+1) << " timeout.\n";
+        std::cout << "Total " << error_count_.get_timeout() << " connections timeout. ";
+        std::cout << "everage " << error_count_.get_timeout()/(i+1) << " timeout.\n";
       }
-      if (error_count_->get_error() != 0)
+      if (error_count_.get_error() != 0)
       {
-        std::cout << "Total " << error_count_->get_error() << " connections failed. ";
-        std::cout << "everage " << error_count_->get_error()/(i+1) << " failed.\n";
+        std::cout << "Total " << error_count_.get_error() << " connections failed. ";
+        std::cout << "everage " << error_count_.get_error()/(i+1) << " failed.\n";
       }
 
       if (i < test_times_ - 1)
@@ -102,10 +101,10 @@ public:
     }
     
     std::cout << "All test done! total established connections " << counts << ", time " << time_long_.total_milliseconds() << " ms.";
-    if (error_count_->get_timeout() != 0)
-      std::cout << " total " << error_count_->get_timeout() << " connections timeout.";
-    if (error_count_->get_error() != 0)
-      std::cout << " total " << error_count_->get_error() << " connections failed.";
+    if (error_count_.get_timeout() != 0)
+      std::cout << " total " << error_count_.get_timeout() << " connections timeout.";
+    if (error_count_.get_error() != 0)
+      std::cout << " total " << error_count_.get_error() << " connections failed.";
     std::cout << "\n";
   }
 
@@ -114,8 +113,8 @@ public:
     boost::posix_time::ptime time_start;
     boost::posix_time::time_duration time_long;
 
-    std::size_t error_timeout = error_count_->get_timeout();
-    std::size_t error_other = error_count_->get_error();
+    std::size_t error_timeout = error_count_.get_timeout();
+    std::size_t error_other = error_count_.get_error();
 
     std::cout << "Creating " << connection_number_ << " connections.\n";
     time_start = boost::posix_time::microsec_clock::universal_time();
@@ -148,8 +147,8 @@ public:
       }
     }
 
-    error_timeout = error_count_->get_timeout() - error_timeout;
-    error_other = error_count_->get_error() - error_other;
+    error_timeout = error_count_.get_timeout() - error_timeout;
+    error_other = error_count_.get_error() - error_other;
 
     time_long = boost::posix_time::microsec_clock::universal_time() - time_start;
     std::cout << "All connections complete in " << time_long.total_milliseconds() << " ms.";
@@ -166,7 +165,7 @@ private:
   bas::io_service_pool io_service_pool_;
   bas::io_service_pool work_service_pool_;
   client_type client_;
-  error_count* error_count_;
+  error_count& error_count_;
   
   boost::asio::io_service io_service_;
   boost::asio::deadline_timer timer_;

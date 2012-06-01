@@ -28,7 +28,7 @@ class client_work
 public:
   typedef bas::service_handler<client_work> client_handler_type;
 
-  client_work(error_count* counter, unsigned int pause_time)
+  client_work(error_count& counter, unsigned int pause_time)
     : error_count_(counter),
       pause_time_(pause_time)
   {
@@ -90,12 +90,12 @@ public:
     switch (e.value())
     {
       case boost::asio::error::timed_out:
-        error_count_->timeout();
+        error_count_.timeout();
       
       default:
         if (mlen != handler.read_buffer().size() || \
             memcmp(handler.read_buffer().data(), msg, mlen) != 0)
-          error_count_->error();
+          error_count_.error();
     }
   }
 
@@ -111,7 +111,7 @@ private:
 
   typedef boost::shared_ptr<boost::asio::deadline_timer> timer_ptr;
 
-  error_count* error_count_;
+  error_count& error_count_;
 
   unsigned int pause_time_;
 

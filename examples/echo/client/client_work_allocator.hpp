@@ -21,7 +21,7 @@ class client_work_allocator
 public:
   typedef boost::asio::ip::tcp::socket socket_type;
 
-  client_work_allocator(error_count* counter, unsigned int pause_time)
+  client_work_allocator(error_count& counter, unsigned int pause_time)
     : error_count_(counter),
       pause_time_(pause_time)
   {
@@ -38,7 +38,7 @@ public:
   }
 
 private:
-  error_count* error_count_;
+  error_count& error_count_;
   unsigned int pause_time_;
 };
 
