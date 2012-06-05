@@ -17,7 +17,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <bas/io_service_pool.hpp>
+#include <bas/io_service_group.hpp>
 #include <bas/service_handler.hpp>
 #include <bas/service_handler_pool.hpp>
 
@@ -46,7 +46,9 @@ public:
   typedef service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> service_handler_pool_t;
   typedef boost::shared_ptr<service_handler_pool_t> service_handler_pool_ptr;
 
-  /// Construct the server to listen on the specified TCP address and port.
+  typedef boost::shared_ptr<io_service_group> io_service_group_ptr;
+
+  /// Construct server object with internal io_service_group..
   server(service_handler_pool_t* service_handler_pool,
       endpoint_t& local_endpoint,
       size_t io_pool_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
@@ -55,29 +57,58 @@ public:
       size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
       size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
+      service_group_(new io_service_group(2)),
       acceptor_service_pool_(1),
-      io_service_pool_(io_pool_size),
-      work_service_pool_(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
       endpoint_(local_endpoint),
       accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
-      force_stop_(false)
+      has_service_group_(true)
   {
     BOOST_ASSERT(service_handler_pool != 0);
     BOOST_ASSERT(accept_queue_length != 0);
+
+    service_group_->get(io_service_group::io_pool).set(io_pool_size, io_pool_size);
+    service_group_->get(io_service_group::work_pool).set(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load);
 
     // Create preallocated handlers of the pool.
     service_handler_pool_->init();
   }
 
-  /// Destruct the server object.
+  /// Construct server object with external io_service_group.
+  server(service_handler_pool_t* service_handler_pool,
+      endpoint_t& local_endpoint,
+      io_service_group_ptr service_group,
+      size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
+    : service_handler_pool_(service_handler_pool),
+      service_group_(service_group),
+      acceptor_service_pool_(1),
+      acceptor_(acceptor_service_pool_.get_io_service()),
+      timer_(acceptor_.get_io_service()),
+      endpoint_(local_endpoint),
+      accept_queue_length_(accept_queue_length),
+      started_(false),
+      block_(false),
+      has_service_group_(false)
+  {
+    BOOST_ASSERT(service_handler_pool != 0);
+    BOOST_ASSERT(accept_queue_length != 0);
+    BOOST_ASSERT(service_group_.get() != 0);
+
+    // Create preallocated handlers of the pool.
+    service_handler_pool_->init();
+  }
+
+  /// Destructor.
   ~server()
   {
-    // Stop the server's io_service loop.
+    // Stop server.
     stop();
+
+    // Destroy instance of io_service_group.
+    service_group_.reset();
 
     // Release all handlers in the pool.
     service_handler_pool_->close();
@@ -85,26 +116,28 @@ public:
     // Destroy service_handler pool.
     service_handler_pool_.reset();
   }
-  
-  /// Set stop with gracefully mode or force mode.
-  void set_force_stop(bool force_stop = false)
+
+  /// Set stop mode to graceful or force.
+  server& set(bool force_stop = false)
   {
-    force_stop_ = force_stop;
+    service_group_->set(force_stop);
+
+    return *this;
   }
 
-  /// Start server in nonblock model.
+  /// Start server with non-blocked model.
   void start()
   {
     start(false);
   }
 
-  /// Run server in block model.
+  /// Run server with blocked model.
   void run()
   {
     start(true);
   }
 
-  /// Stop the server.
+  /// Stop server.
   void stop()
   {
     if (!started_)
@@ -114,12 +147,14 @@ public:
     acceptor_.get_io_service().dispatch(boost::bind(&boost::asio::ip::tcp::acceptor::close,
         &acceptor_));
 
-    // Stop accept_service_pool from block.
+    // Stop accept_service_pool.
     acceptor_service_pool_.stop();
 
     if (!block_)
     {
-      stop_services_pool();
+      // Stop internal io_service_group.
+      if (has_service_group_)
+        service_group_->stop();
 
       started_ = false;
     }
@@ -135,65 +170,43 @@ private:
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     acceptor_.open(endpoint_.protocol());
     acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-    acceptor_.bind(endpoint_);
+
+    boost::system::error_code e;
+    acceptor_.bind(endpoint_, e);
+    if (e)
+      return;
+
     acceptor_.listen();
   
     // Accept new connections.
     for (size_t i = 0; i < accept_queue_length_; ++i)
       accept_one();
 
-    // Start work_service_pool with nonblock to perform synchronous works.
-    work_service_pool_.start();
-    // Start io_service_pool with nonblock to perform asynchronous i/o operations.
-    io_service_pool_.start();
+    // Start internal io_service_group with non-blocked mode.
+    if (has_service_group_)
+      service_group_->start();
 
     block_ = block;
 
-    // Start accept_service_pool with block to perform asynchronous accept operations.
     if (block)
     {
       started_ = true;
 
-      // Start accept_service_pool with block to perform asynchronous accept operations.
+      // Start accept_service_pool with blocked mode.
       acceptor_service_pool_.run();
 
-      stop_services_pool();
+      // Stop internal io_service_group.
+      if (has_service_group_)
+        service_group_->stop();
 
       started_ = false;
     }
     else
     {
+      // Start accept_service_pool with non-blocked mode.
       acceptor_service_pool_.start();
 
       started_ = true;
-    }
-  }
-
-  /// Wait for all service_pool to exit.
-  void stop_services_pool()
-  {
-    if (force_stop_)
-    {
-      // Stop io_service_pool with force mode.
-      io_service_pool_.stop(force_stop_);
-      // Stop work_service_pool with force mode.
-      work_service_pool_.stop(force_stop_);
-    }
-    else
-    {
-      // Stop io_service_pool.
-      io_service_pool_.stop();
-      // Stop work_service_pool.
-      work_service_pool_.stop();
-
-      // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
-      while (!io_service_pool_.is_free() || !work_service_pool_.is_free())
-      {
-        work_service_pool_.start();
-        io_service_pool_.start();
-        io_service_pool_.stop();
-        work_service_pool_.stop();
-      }
     }
   }
 
@@ -208,8 +221,8 @@ private:
   void accept_one_i()
   {
     // Get new handler for accept.
-    service_handler_ptr handler = service_handler_pool_->get_service_handler(io_service_pool_.get_io_service(),
-        work_service_pool_.get_io_service(service_handler_pool_->get_load()));
+    service_handler_ptr handler = service_handler_pool_->get_service_handler(service_group_->get(io_service_group::io_pool).get_io_service(),
+            service_group_->get(io_service_group::work_pool).get_io_service(service_handler_pool_->get_load()));
 
     // Wait for some seconds to accept next connection if exceed max connection number.
     if (handler.get() == 0)
@@ -269,14 +282,11 @@ private:
   /// The pool of service_handler objects.
   service_handler_pool_ptr service_handler_pool_;
 
+  /// The group of io_service_pool objects used to perform asynchronous operations.
+  io_service_group_ptr service_group_;
+
   /// The pool of io_service objects used to perform asynchronous accept operations.
   io_service_pool acceptor_service_pool_;
-
-  /// The pool of io_service objects used to perform asynchronous i/o operations.
-  io_service_pool io_service_pool_;
-
-  /// The pool of io_service objects used to perform synchronous works.
-  io_service_pool work_service_pool_;
 
   /// The acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor acceptor_;
@@ -290,14 +300,14 @@ private:
   /// The queue length for async_accept.
   size_t accept_queue_length_;
 
-  /// Flag to indicate that the server is started or not.
+  /// Flag to indicate whether the server is started.
   bool started_;
 
-  /// Flag to indicate that start() functions will block or not.
+  /// Flag to indicate whether the server is started with blocked mode.
   bool block_;  
 
-  /// Flag to indicate the server whether with gracefully stop mode.
-  bool force_stop_;
+  /// Flag to indicate whether the server has internal io_service_group.
+  bool has_service_group_;
 };
 
 } // namespace bas

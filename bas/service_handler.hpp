@@ -299,6 +299,21 @@ private:
     work_handler_->on_clear(*this);
   }
 
+  /// Release and reset temporary variables.
+  void clear()
+  {
+    // Release allocated socket.
+    socket_.reset();
+
+    // Reset io_service and work_service.
+    io_service_ = 0;
+    work_service_ = 0;
+
+    // Clear buffers for new operations.
+    read_buffer().clear();
+    write_buffer().clear();    
+  }
+
   /// Start an asynchronous connect, can be call from any thread.
   void connect(endpoint_t& peer_endpoint,
       endpoint_t& local_endpoint = endpoint_t())
@@ -356,7 +371,16 @@ private:
     {
       // Opening and binding lowest_layer socket to the given local endpoint.
       socket().lowest_layer().open(local_endpoint.protocol());
-      socket().lowest_layer().bind(local_endpoint);
+
+      boost::system::error_code e;
+      socket().lowest_layer().bind(local_endpoint, e);
+      if (e)
+      {
+        // Close with error_code e.
+        close_i(e);
+
+        return;
+      }
     }
 
     // Use lowest_layer socket for ssl.
@@ -660,7 +684,7 @@ private:
     session_timer_.reset();
     io_timer_.reset();
 
-    // Leave socket to destroy delay for finishing uncompleted SSL operations.
+    // Leave socket to for finishing uncompleted SSL operations.
     // Leave io_service_/work_service_ for finishing uncompleted operations.
   }
 

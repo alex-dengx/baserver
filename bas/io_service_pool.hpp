@@ -48,6 +48,7 @@ public:
       io_services_(),
       work_(),
       threads_(),
+      pool_init_size_(pool_init_size),
       pool_high_watermark_(pool_high_watermark),
       pool_thread_load_(pool_thread_load),
       next_io_service_(0),
@@ -65,7 +66,7 @@ public:
       io_services_.push_back(io_service);
     }
   }
-  
+
   /// Destruct the pool object.
   ~io_service_pool()
   {
@@ -77,6 +78,25 @@ public:
       io_services_[i].reset();
 
     io_services_.clear();
+  }
+
+  /// Set pool parameters.
+  io_service_pool& set(size_t pool_init_size = BAS_IO_SERVICE_POOL_INIT_SIZE,
+      size_t pool_high_watermark = BAS_IO_SERVICE_POOL_HIGH_WATERMARK,
+      size_t pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
+  {
+    BOOST_ASSERT(pool_init_size != 0);
+    BOOST_ASSERT(pool_high_watermark >= pool_init_size);
+    BOOST_ASSERT(pool_thread_load != 0);
+
+    if (threads_.size() == 0)
+    {
+      pool_init_size_ = pool_init_size;
+      pool_high_watermark_ = pool_high_watermark;
+      pool_thread_load_ = pool_thread_load;
+    }
+
+    return *this;
   }
 
   /// Get the size of the pool.
@@ -182,6 +202,17 @@ private:
     // The pool has not do anything now, reset to true.
     is_free_ = true;
 
+    // Create additional io_service pool.
+    for (size_t i = io_services_.size(); i < pool_init_size_; ++i)
+    {
+      io_service_ptr io_service(new boost::asio::io_service);
+      io_services_.push_back(io_service);
+    }
+
+    // Release redundant io_service pool.
+    for (size_t i = io_services_.size(); i > pool_init_size_; --i)
+      io_services_.pop_back();
+
     // Start all io_service.
     for (size_t i = 0; i < io_services_.size(); ++i)
       start_one(io_services_[i]);
@@ -263,10 +294,13 @@ private:
   /// The pool of threads for running individual io_service.
   std::vector<thread_ptr> threads_;
 
+  /// Initialize size of the pool.
+  size_t pool_init_size_;
+
   /// High water mark of the pool.
   size_t pool_high_watermark_;
 
-  /// Carrying the load of each thread.
+  /// The carrying load of each thread.
   size_t pool_thread_load_;
 
   /// The next io_service to use for a connection.
