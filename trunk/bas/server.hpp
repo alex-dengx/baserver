@@ -57,7 +57,6 @@ public:
       size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
       size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
-      service_group_(new io_service_group(2)),
       acceptor_service_pool_(1),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
@@ -65,6 +64,7 @@ public:
       accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
+      service_group_(new io_service_group(2)),
       has_service_group_(true)
   {
     BOOST_ASSERT(service_handler_pool != 0);
@@ -80,10 +80,8 @@ public:
   /// Construct server object with external io_service_group.
   server(service_handler_pool_t* service_handler_pool,
       endpoint_t& local_endpoint,
-      io_service_group_ptr service_group,
       size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
-      service_group_(service_group),
       acceptor_service_pool_(1),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
@@ -91,11 +89,11 @@ public:
       accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
+      service_group_(),
       has_service_group_(false)
   {
     BOOST_ASSERT(service_handler_pool != 0);
     BOOST_ASSERT(accept_queue_length != 0);
-    BOOST_ASSERT(service_group_.get() != 0);
 
     // Create preallocated handlers of the pool.
     service_handler_pool_->init();
@@ -120,7 +118,21 @@ public:
   /// Set stop mode to graceful or force.
   server& set(bool force_stop = false)
   {
-    service_group_->set(force_stop);
+    if (!started_ && service_group_.get() != 0)
+      service_group_->set(force_stop);
+
+    return *this;
+  }
+
+  /// Set io_service_group to use.
+  server& set(io_service_group_ptr service_group)
+  {
+    if (!started_ && service_group.get() != 0)
+    {
+      service_group_.reset();
+      service_group_ = service_group;
+      has_service_group_ = false;
+    }
 
     return *this;
   }
@@ -140,7 +152,9 @@ public:
   /// Stop server.
   void stop()
   {
-    if (!started_)
+    if (!started_                 || \
+        service_group_.get() == 0 || \
+        !has_service_group_ && !service_group_->started())
       return;
 
     // Close the acceptor in the same thread.
@@ -164,7 +178,9 @@ private:
   /// Start server with given mode.
   void start(bool block)
   {
-    if (started_)
+    if (started_                  || \
+        service_group_.get() == 0 || \
+        !has_service_group_ && !service_group_->started())
       return;
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
