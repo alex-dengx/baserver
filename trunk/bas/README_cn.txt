@@ -46,6 +46,7 @@ bas´úÂëÖÐ°üº¬ÁËÏêÏ¸µÄ×¢½â£¬¼¸¸öÊ¾Àý³ÌÐòÑÝÊ¾ÁË»ù±¾µÄÓÃ·¨£¬ÕâÀïÖ÷Òª½«Á½¸öÄ£°å²ÎÊýµ
 8¡¢ 0.53.0£¬ÓÅ»¯serverÉè¼Æ£¬Í¶µÝ¶à¸öasync_acceptÌá¸ßÁ¬½ÓÐ§ÂÊ£¬ÓÅ»¯Á¬½ÓÖÐÖ¹´¦Àí¡£
 9¡¢ 0.55.0£¬µ÷Õû²¿·Ö½Ó¿Ú£¬ÓÅ»¯Á¬½Ó³Ø¿ØÖÆ£¬ÉèÖÃÁ¬½ÓÉÏÏÞ£¬³¬³öÉÏÏÞÊ±·þÎñÆ÷ÑÓÊ±accept¡£
 10¡¢0.55.1£¬Ôö¼Ó¹¤¾ßÀàbastoolÏµÁÐ£¬½øÒ»²½·â×°I/OºÍÒµÎñÂß¼­£¬¾ßÌå²Î¼ûexamplesµÄ´úÂë¡£
+11¡¢0.55.3£¬Ôö¼Óio_service_group£¬ÓÅ»¯server/service_handler£¬¾ßÌå²Î¼ûexamplesµÄ´úÂë¡£
 
 ËÄ¡¢ÆäËûËµÃ÷
 ÎªÁËÊµÏÖÎÞËøÉè¼Æ£¬ËùÓÐI/O²Ù×÷¼°ÒµÎñ²Ù×÷ÈÎÎñ·Ö±ð±»·ÖÅÉµ½²»Í¬µ«¹Ì¶¨µÄÏß³ÌÖ´ÐÐ¡£Èç¹ûÒµÎñ´¦ÀíÈÎÎñ¸ºÔØ·Ç³£Ð¡£¬½«»á·¢Éú²»±ØÒªµÄ¶îÍâÏß³ÌÇÐ»»¡£µ«ÊÇ¿¼ÂÇµ½Âß¼­ÇåÎú¶ø¼òµ¥µÄÐèÒª(²»ÊÇÓÐ¸öËµ·¨½Ð×ö¿ÆÑ§¾ÍÊÇ×·Çó¼òµ¥Âï)£¬ÇÒÊµ¼ÊµÄÓÃ»§Ó¦ÓÃ³ÌÐòµÄÒµÎñ´¦ÀíÈÎÎñ¸ºÔØÓ¦¸Ã±È½Ï·±ÖØ£¬ËùÒÔ×îÖÕ±£ÁôÁËÏÖÓÐµÄÉè¼Æ¡£

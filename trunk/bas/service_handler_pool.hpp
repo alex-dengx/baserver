@@ -141,6 +141,9 @@ public:
   {
     BOOST_ASSERT(handler_ptr != 0);
 
+    // Release and reset temporary variables.
+    handler_ptr->clear();
+
     // Lock for synchronize access to data.
     scoped_lock_t lock(mutex_);
 

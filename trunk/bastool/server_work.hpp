@@ -66,6 +66,12 @@ struct status_t
   /// Local client address.
   endpoint_t local_endpoint;
 
+  /// Remote socket address.
+  endpoint_t remote_endpoint;
+
+  /// Child socket address.
+  endpoint_t child_endpoint;
+
   /// Default constructor.
   status_t()
   {
@@ -80,6 +86,8 @@ struct status_t
     ec = boost::system::error_code();
     peer_endpoint = endpoint_t();
     local_endpoint = endpoint_t();
+    remote_endpoint = endpoint_t();
+    child_endpoint = endpoint_t();
   }
 
   /// Set special member to given value.
@@ -321,6 +329,7 @@ public:
   void on_open(server_handler_t& handler)
   {
     status_.clear();
+    status_.remote_endpoint = handler.socket().lowest_layer().remote_endpoint();
     status_.set(BAS_STATE_ON_OPEN);
     io_buffer(handler).clear();
     biz_->process(status_, io_buffer(handler), io_buffer(handler));
@@ -369,6 +378,7 @@ public:
     switch (event.state)
     {
       case bas::event::open:
+        status_.child_endpoint = (*client_handler_).socket().lowest_layer().remote_endpoint();
         status_.set(BAS_STATE_ON_CLIENT_OPEN);
         biz_->process(status_, io_buffer(handler), io_buffer(handler));
         do_io(handler);
