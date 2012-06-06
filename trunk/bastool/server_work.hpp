@@ -39,6 +39,7 @@ namespace bastool {
 #define BAS_STATE_ON_CLIENT_READ          0x1200
 #define BAS_STATE_ON_CLIENT_WRITE         0x1400
 #define BAS_STATE_ON_CLIENT_CLOSE         0xFF00
+#define BAS_STATE_ON_NOTIFY               0x1818
 
 using namespace bas;
 
@@ -170,7 +171,6 @@ public:
 
       default:
         status.state = BAS_STATE_DO_CLOSE;
-        break;
     }
   }
 
@@ -200,7 +200,7 @@ public:
   typedef boost::shared_ptr<client_handler_t> client_handler_ptr;
 
   /// Constructor.
-  server_work(Biz_Handler* biz, client_ptr client)
+  server_work(Biz_Handler* biz, client_ptr& client)
     : biz_(biz),
       client_(client),
       client_handler_(),
@@ -251,9 +251,18 @@ public:
           }
         
           if (status_.state == BAS_STATE_DO_CLIENT_OPEN)
+          {
             if (!client_->connect(handler, status_.peer_endpoint, status_.local_endpoint))
               handler.close();
+          }
+          else
+          {
+            // Notify parent for child closed by parent.
+            handler.child_post(bas::event(bas::event::notify));
+          }
         }
+        else
+          handler.close();
 
         break;
 
@@ -273,6 +282,8 @@ public:
             client_handler_->parent_post(bas::event(bas::event::read));
           }
         }
+        else
+          handler.close();
 
         break;
 
@@ -300,18 +311,20 @@ public:
               client_handler_->parent_post(bas::event(bas::event::write_read));
             }
             else
+            {
               // Notify child to write.
               client_handler_->parent_post(bas::event(bas::event::write));
+            }
           }
         }
+        else
+          handler.close();
 
         break;
 
       case BAS_STATE_DO_CLOSE:
       default:
         handler.close();
-
-        break;
     }
   }
 
@@ -336,7 +349,7 @@ public:
     biz_->process(status_, io_buffer(handler), io_buffer(handler));
     do_io(handler);
   }
-  
+
   void on_read(server_handler_t& handler, size_t bytes_transferred)
   {
     status_.set(BAS_STATE_ON_READ, bytes_transferred);
@@ -370,14 +383,16 @@ public:
     status_.set(BAS_STATE_NONE);
   }
 
-  void on_parent(server_handler_t& handler, const event_t event)
-  {
-  }
-
   void on_child(server_handler_t& handler, const event_t event)
   {
     switch (event.state)
     {
+      case bas::event::notify:
+        status_.set(BAS_STATE_ON_NOTIFY);
+        biz_->process(status_, io_buffer(handler), io_buffer(handler));
+        do_io(handler);
+        break;
+
       case bas::event::open:
         status_.child_endpoint = (*client_handler_).socket().lowest_layer().remote_endpoint();
         status_.set(BAS_STATE_ON_CLIENT_OPEN);

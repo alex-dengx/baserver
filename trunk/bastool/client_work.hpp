@@ -88,9 +88,7 @@ public:
     io_buffer(handler).crunch();
 
     if (event_.state == bas::event::write_read)
-    {
       handler.async_read_some();
-    }
     else
       server_handler_->child_post(bas::event(bas::event::write, bytes_transferred));
   }
@@ -130,10 +128,6 @@ public:
         handler.async_read_some();
         break;
     }
-  }
-
-  void on_child(client_handler_t& handler, const event_t e)
-  {
   }
 
 private:
