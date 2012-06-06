@@ -125,7 +125,7 @@ public:
   }
 
   /// Set io_service_group to use.
-  server& set(io_service_group_ptr service_group)
+  server& set(io_service_group_ptr& service_group)
   {
     if (!started_ && service_group.get() != 0)
     {

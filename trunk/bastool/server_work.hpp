@@ -197,12 +197,13 @@ public:
   /// Define shared_ptr for holding pointers.
   typedef boost::shared_ptr<client_t> client_ptr;
   typedef boost::shared_ptr<Biz_Handler> biz_ptr;
+  typedef boost::shared_ptr<client_handler_t> client_handler_ptr;
 
   /// Constructor.
   server_work(Biz_Handler* biz, client_ptr client)
     : biz_(biz),
       client_(client),
-      client_handler_(0),
+      client_handler_(),
       status_(),
       passive_close_(false)
   {
@@ -240,13 +241,13 @@ public:
       case BAS_STATE_DO_CLIENT_CLOSE:
         if (client_.get() != 0)
         {
-          if (client_handler_ != 0)
+          if (client_handler_.get() != 0)
           {
             // Notify child to close.
             if (!passive_close_)
               client_handler_->parent_post(bas::event(bas::event::close));
 
-            client_handler_ = 0;
+            client_handler_.reset();
           }
         
           if (status_.state == BAS_STATE_DO_CLIENT_OPEN)
@@ -257,7 +258,7 @@ public:
         break;
 
       case BAS_STATE_DO_CLIENT_READ:
-        if (client_handler_ != 0)
+        if (client_handler_.get() != 0)
         {
           if (io_buffer(*client_handler_).space() == 0)
           {
@@ -277,7 +278,7 @@ public:
 
       case BAS_STATE_DO_CLIENT_WRITE:
       case BAS_STATE_DO_CLIENT_WRITE_READ:
-        if (client_handler_ != 0)
+        if (client_handler_.get() != 0)
         {
           // Clear client buffer here.
           io_buffer(*client_handler_).clear();
@@ -314,9 +315,9 @@ public:
     }
   }
 
-  void on_set_child(server_handler_t& handler, client_handler_t* client_handler)
+  void on_set_child(server_handler_t& handler, client_handler_ptr& client_handler)
   {
-    BOOST_ASSERT(client_handler != 0);
+    BOOST_ASSERT(client_handler.get() != 0);
 
     passive_close_ = false;
     client_handler_ = client_handler;
@@ -355,13 +356,13 @@ public:
 
   void on_close(server_handler_t& handler, const boost::system::error_code& ec)
   {
-    if (client_handler_ != 0)
+    if (client_handler_.get() != 0)
     {
       // Notify child to close.
       if (!passive_close_)
         client_handler_->parent_post(bas::event(bas::event::close, 0, ec));
 
-      client_handler_ = 0;
+      client_handler_.reset();
     }
 
     status_.set(BAS_STATE_ON_CLOSE, 0, ec);
@@ -418,7 +419,7 @@ private:
   client_ptr client_;
 
   /// The client handler.
-  client_handler_t* client_handler_;
+  client_handler_ptr client_handler_;
 
   /// Flag for passive close.
   bool passive_close_;

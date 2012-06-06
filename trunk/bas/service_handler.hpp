@@ -311,7 +311,7 @@ private:
 
     // Clear buffers for new operations.
     read_buffer().clear();
-    write_buffer().clear();    
+    write_buffer().clear();
   }
 
   /// Start an asynchronous connect, can be call from any thread.
@@ -630,7 +630,7 @@ private:
 
   /// Set the parent handler in work_service thread.
   template<typename Parent_Handler>
-  void set_parent(Parent_Handler* handler)
+  void set_parent(Parent_Handler& handler)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
@@ -642,7 +642,7 @@ private:
 
   /// Set the child handler in work_service thread.
   template<typename Child_Handler>
-  void set_child(Child_Handler* handler)
+  void set_child(Child_Handler& handler)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
