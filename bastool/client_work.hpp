@@ -34,9 +34,12 @@ public:
   typedef service_handler<server_work_t> server_handler_t;
   typedef service_handler<client_work_t> client_handler_t;
 
+  /// Define shared_ptr for holding pointers.
+  typedef boost::shared_ptr<server_handler_t> server_handler_ptr;
+
   /// Constructor.
   client_work()
-  : server_handler_(0),
+  : server_handler_(),
     event_(),
     passive_close_(false)
   {
@@ -49,9 +52,9 @@ public:
     return handler.read_buffer();
   }
   
-  void on_set_parent(client_handler_t& handler, server_handler_t* server_handler)
+  void on_set_parent(client_handler_t& handler, server_handler_ptr& server_handler)
   {
-    BOOST_ASSERT(server_handler != 0);
+    BOOST_ASSERT(server_handler.get() != 0);
     
     passive_close_ = false;
     server_handler_ = server_handler;
@@ -63,7 +66,7 @@ public:
   
   void on_open(client_handler_t& handler)
   {
-    BOOST_ASSERT(server_handler_ != 0);
+    BOOST_ASSERT(server_handler_.get() != 0);
 
     io_buffer(handler).clear();
     server_handler_->child_post(bas::event(bas::event::open));
@@ -71,7 +74,7 @@ public:
 
   void on_read(client_handler_t& handler, size_t bytes_transferred)
   {
-    BOOST_ASSERT(server_handler_ != 0);
+    BOOST_ASSERT(server_handler_.get() != 0);
 
     io_buffer(handler).produce(bytes_transferred);
     server_handler_->child_post(bas::event(bas::event::read, bytes_transferred));
@@ -79,7 +82,7 @@ public:
 
   void on_write(client_handler_t& handler, size_t bytes_transferred)
   {
-    BOOST_ASSERT(server_handler_ != 0);
+    BOOST_ASSERT(server_handler_.get() != 0);
 
     io_buffer(handler).consume(bytes_transferred);
     io_buffer(handler).crunch();
@@ -94,19 +97,19 @@ public:
 
   void on_close(client_handler_t& handler, const boost::system::error_code& ec)
   {
-    if (server_handler_ != 0)
+    if (server_handler_.get() != 0)
     {
       // Notify parent to close.
       if (!passive_close_)
         server_handler_->child_post(bas::event(bas::event::close, 0, ec));
 
-      server_handler_ = 0;
+      server_handler_.reset();
     }
   }
   
   void on_parent(client_handler_t& handler, const event_t event)
   {
-    BOOST_ASSERT(server_handler_ != 0);
+    BOOST_ASSERT(server_handler_.get() != 0);
 
     event_ = event;
 
@@ -135,8 +138,8 @@ public:
 
 private:
   /// The server handler.
-  server_handler_t* server_handler_;
-  
+  server_handler_ptr server_handler_;
+
   /// The event from server_handler.
   event_t event_;
 

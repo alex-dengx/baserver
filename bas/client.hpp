@@ -128,9 +128,9 @@ public:
       return false;
 
     // Execute in work_thread, because connect will be called in the same thread.
-    parent_handler.set_child(new_handler.get());
-    new_handler->set_parent(&parent_handler);
-    
+    parent_handler.set_child(new_handler);
+    new_handler->set_parent(parent_handler.shared_from_this());
+
     // Use new handler to connect.
     new_handler->connect(peer_endpoint, local_endpoint);
 
@@ -152,9 +152,9 @@ public:
       return false;
 
     // Execute in work_thread, because connect will be called in the same thread.
-    parent_handler.set_child(new_handler.get());
-    new_handler->set_parent(&parent_handler);
-    
+    parent_handler.set_child(new_handler);
+    new_handler->set_parent(parent_handler.shared_from_this());
+
     // Use new handler to connect.
     new_handler->connect(data, peer_endpoint, local_endpoint);
 
