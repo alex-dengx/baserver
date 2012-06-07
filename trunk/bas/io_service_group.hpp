@@ -108,11 +108,11 @@ public:
     // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
     while (!force_stop_)
     {
-      bool is_free = true;
-      for (size_t i = 0; is_free && i < io_service_pools_.size(); ++i)
-        is_free = io_service_pools_[i]->is_free();
+      bool idle = true;
+      for (size_t i = 0; idle && i < io_service_pools_.size(); ++i)
+        idle = io_service_pools_[i]->idle();
 
-      if (is_free)
+      if (idle)
         break;
 
       // Start all io_service_pool with non-blocked mode.

@@ -46,14 +46,14 @@ public:
       size_t pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD)
     : mutex_(),
       io_services_(),
-      work_(),
       threads_(),
+      work_(),
       pool_init_size_(pool_init_size),
       pool_high_watermark_(pool_high_watermark),
       pool_thread_load_(pool_thread_load),
       next_io_service_(0),
-      is_free_(true),
-      block_(false)
+      blocked_(false),
+      idle_(true)
   {
     BOOST_ASSERT(pool_init_size_ != 0);
     BOOST_ASSERT(pool_high_watermark_ >= pool_init_size_);
@@ -97,8 +97,11 @@ public:
   }
 
   /// Get the size of the pool.
-  size_t size() const
+  size_t size()
   {
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
+
     return io_services_.size();
   }
 
@@ -109,55 +112,86 @@ public:
   }
 
   /// Get work status of the pool.
-  bool is_free()
+  bool idle()
   {
     // Lock for synchronize access to data.
     scoped_lock_t lock(mutex_);
 
-    return is_free_;
+    return idle_;
   }
 
-  /// Start all io_service objects in nonblock model.
-  void start()
-  {
-    start(false);
-  }
-
-  /// Run all io_service objects in block model.
+  /// Run all io_service objects in blocked model.
   void run()
   {
     start(true);
   }
 
-  /// Stop all io_service objects in the pool with gracefully mode,
-  ///   All work will be finished and there are no more handlers to be dispatched.
-  void stop()
+  /// Start all io_service objects, default with non-bocked mode.
+  void start(bool blocked = false)
   {
-    stop(false);
+    if (threads_.size() != 0)
+      return;
+
+    {
+      // Lock for synchronize access to data.
+      scoped_lock_t lock(mutex_);
+
+      blocked_ = blocked;
+
+      // Create additional io_service pool.
+      for (size_t i = io_services_.size(); i < pool_init_size_; ++i)
+        io_services_.push_back(io_service_ptr(new boost::asio::io_service));
+
+      // Release redundant io_service pool.
+      for (size_t i = io_services_.size(); i > pool_init_size_; --i)
+        io_services_.pop_back();
+
+      // The pool is still idle now, set to true.
+      idle_ = true;
+
+      // Start all io_service.
+      for (size_t i = 0; i < io_services_.size(); ++i)
+        start_one(io_services_[i]);
+    }
+
+    // If in block mode, wait for all threads to exit.
+    if (blocked_)
+      wait();
   }
 
-  /// Stop all io_service objects in the pool.
-  void stop(bool force)
+  /// Stop all io_service objects, default with gracefully mode.
+  void stop(bool force = false)
   {
-    // Allow all operations and handlers to be finished normally,
-    //   the work object may be explicitly destroyed.
-    for (size_t i = 0; i < work_.size(); ++i)
-      work_[i].reset();
+    if (work_.size() == 0)
+      return;
 
-    work_.clear();
+    {
+      // Lock for synchronize access to data.
+      scoped_lock_t lock(mutex_);
+
+      // Allow all operations and handlers to be finished normally,
+      //   the work object may be explicitly destroyed.
+      for (size_t i = 0; i < work_.size(); ++i)
+        work_[i].reset();
+
+      work_.clear();
+    }
 
     // If in force mode, maybe some handlers cannot be dispatched.
     if (force)
       force_stop();
 
     // If in block mode, wait for all threads in the pool to exit.
-    if (!block_)
+    if (!blocked_)
       wait();
   }
 
   /// Get an io_service to use.
   boost::asio::io_service& get_io_service()
   {
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
+
     // Use a round-robin scheme to choose the next io_service to use.
     if (next_io_service_ >= io_services_.size())
       next_io_service_ = 0;
@@ -170,7 +204,13 @@ public:
   {
     // Calculate the required number of threads.
     size_t threads_number = load / pool_thread_load_;
-    if (!block_ &&                              \
+
+    // Lock for synchronize access to data.
+    scoped_lock_t lock(mutex_);
+
+    if (!blocked_                            && \
+        work_.size() != 0                    && \
+        threads_.size() != 0                 && \
         threads_number > io_services_.size() && \
         io_services_.size() < pool_high_watermark_)
     {
@@ -188,35 +228,7 @@ private:
   typedef boost::shared_ptr<boost::asio::io_service> io_service_ptr;
   typedef boost::shared_ptr<boost::asio::io_service::work> work_ptr;
   typedef boost::shared_ptr<boost::thread> thread_ptr;
-
-  /// Start all io_service objects in the pool.
-  void start(bool block)
-  {
-    if (threads_.size() != 0)
-      return;
-
-    // The pool has not do anything now, reset to true.
-    is_free_ = true;
-
-    // Create additional io_service pool.
-    for (size_t i = io_services_.size(); i < pool_init_size_; ++i)
-      io_services_.push_back(io_service_ptr(new boost::asio::io_service));
-
-    // Release redundant io_service pool.
-    for (size_t i = io_services_.size(); i > pool_init_size_; --i)
-      io_services_.pop_back();
-
-    // Start all io_service.
-    for (size_t i = 0; i < io_services_.size(); ++i)
-      start_one(io_services_[i]);
-
-    block_ = block;
-
-    // If in block mode, wait for all threads in the pool to exit.
-    if (block_)
-      wait();
-  }
-
+  
   /// Wait for all threads in the pool to exit.
   void wait()
   {
@@ -234,14 +246,14 @@ private:
   /// Run an io_service.
   void run_service(io_service_ptr io_service)
   {
-    // Run the io_service and check executed handler number is zero or not.
+    // Run the io_service and check executed handler number.
     if (io_service->run() != 0)
     {
       // Lock for synchronize access to data.
       scoped_lock_t lock(mutex_);
 
       // Some handlers has been executed, set to false.
-      is_free_ = false;
+      idle_ = false;
     }
   }
 
@@ -274,17 +286,20 @@ private:
   /// Mutex for synchronize access to data.
   mutex_t mutex_;
 
-  /// Work status of the pool.
-  bool is_free_;
+  /// Flag to indicate start mode.
+  bool blocked_;
+
+  /// Flag to indicate work status.
+  bool idle_;
 
   /// The pool of io_services.
   std::vector<io_service_ptr> io_services_;
 
-  /// The work that keeps the io_services running.
-  std::vector<work_ptr> work_;
-
   /// The pool of threads for running individual io_service.
   std::vector<thread_ptr> threads_;
+
+  /// The work that keeps the io_services running.
+  std::vector<work_ptr> work_;
 
   /// Initialize size of the pool.
   size_t pool_init_size_;
@@ -297,9 +312,6 @@ private:
 
   /// The next io_service to use for a connection.
   size_t next_io_service_;
-
-  /// Flag to indicate that start() functions will block or not.
-  bool block_;
 };
 
 } // namespace bas
