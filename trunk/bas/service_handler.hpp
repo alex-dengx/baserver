@@ -103,10 +103,9 @@ public:
       read_buffer_(read_buffer_size),
       write_buffer_(write_buffer_size)
   {
-    // Make sure work_handler != 0.
-    BOOST_ASSERT(work_handler != 0);
+    BOOST_ASSERT(work_handler_.get() != 0);
   }
-  
+
   /// Destruct the service handler.
   ~service_handler()
   {

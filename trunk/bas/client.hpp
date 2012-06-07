@@ -40,31 +40,21 @@ public:
   typedef service_handler_pool<Work_Handler, Work_Allocator, Socket_Service> service_handler_pool_t;
   typedef boost::shared_ptr<service_handler_pool_t> service_handler_pool_ptr;
 
-  /// Construct the client object with given endpoint.
+  /// Constructor.
   client(service_handler_pool_t* service_handler_pool,
-      endpoint_t& peer_endpoint,
+      endpoint_t& peer_endpoint = endpoint_t(),
       endpoint_t& local_endpoint = endpoint_t())
     : service_handler_pool_(service_handler_pool),
       peer_endpoint_(peer_endpoint),
       local_endpoint_(local_endpoint)
   {
-    BOOST_ASSERT(service_handler_pool != 0);
+    BOOST_ASSERT(service_handler_pool_.get() != 0);
 
     // Create preallocated handlers of the pool.
     service_handler_pool_->init();
   }
 
-  /// Construct the client object.
-  client(service_handler_pool_t* service_handler_pool)
-    : service_handler_pool_(service_handler_pool)
-  {
-    BOOST_ASSERT(service_handler_pool != 0);
-
-    // Create preallocated handlers of the pool.
-    service_handler_pool_->init();
-  }
-
-  /// Destruct the client object.
+  /// Destructor.
    ~client()
   {
     // Release all handlers in the pool.
