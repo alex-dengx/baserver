@@ -57,18 +57,18 @@ public:
       size_t work_pool_thread_load = BAS_IO_SERVICE_POOL_THREAD_LOAD,
       size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
+      endpoint_(local_endpoint),
+      service_group_(new io_service_group(2)),
+      accept_queue_length_(accept_queue_length),
       acceptor_service_pool_(1),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
-      endpoint_(local_endpoint),
-      accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
-      service_group_(new io_service_group(2)),
       has_service_group_(true)
   {
-    BOOST_ASSERT(service_handler_pool != 0);
-    BOOST_ASSERT(accept_queue_length != 0);
+    BOOST_ASSERT(service_handler_pool_.get() != 0);
+    BOOST_ASSERT(accept_queue_length_ != 0);
 
     service_group_->get(io_service_group::io_pool).set(io_pool_size, io_pool_size);
     service_group_->get(io_service_group::work_pool).set(work_pool_init_size, work_pool_high_watermark, work_pool_thread_load);
@@ -80,20 +80,22 @@ public:
   /// Construct server object with external io_service_group.
   server(service_handler_pool_t* service_handler_pool,
       endpoint_t& local_endpoint,
+      io_service_group_ptr& service_group,
       size_t accept_queue_length = BAS_ACCEPT_QUEUE_LENGTH)
     : service_handler_pool_(service_handler_pool),
+      endpoint_(local_endpoint),
+      service_group_(service_group),
+      accept_queue_length_(accept_queue_length),
       acceptor_service_pool_(1),
       acceptor_(acceptor_service_pool_.get_io_service()),
       timer_(acceptor_.get_io_service()),
-      endpoint_(local_endpoint),
-      accept_queue_length_(accept_queue_length),
       started_(false),
       block_(false),
-      service_group_(),
       has_service_group_(false)
   {
-    BOOST_ASSERT(service_handler_pool != 0);
-    BOOST_ASSERT(accept_queue_length != 0);
+    BOOST_ASSERT(service_handler_pool_.get() != 0);
+    BOOST_ASSERT(service_group_.get() != 0);
+    BOOST_ASSERT(accept_queue_length_ != 0);
 
     // Create preallocated handlers of the pool.
     service_handler_pool_->init();

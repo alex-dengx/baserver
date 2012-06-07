@@ -84,12 +84,12 @@ public:
       handler_count_(0),
       closed_(true)
   {
-    BOOST_ASSERT(work_allocator != 0);
-    BOOST_ASSERT(pool_init_size != 0);
-    BOOST_ASSERT(pool_low_watermark <= pool_init_size);
-    BOOST_ASSERT(pool_high_watermark > pool_low_watermark);
-    BOOST_ASSERT(pool_maximum > pool_high_watermark);
-    BOOST_ASSERT(pool_increment != 0);
+    BOOST_ASSERT(work_allocator_.get() != 0);
+    BOOST_ASSERT(pool_init_size_ != 0);
+    BOOST_ASSERT(pool_low_watermark_ <= pool_init_size_);
+    BOOST_ASSERT(pool_high_watermark_ > pool_low_watermark_);
+    BOOST_ASSERT(pool_maximum_ > pool_high_watermark_);
+    BOOST_ASSERT(pool_increment_ != 0);
   }
 
   /// Destruct the pool object.
@@ -204,7 +204,7 @@ private:
         write_buffer_size_,
         session_timeout_,
         io_timeout_);
-  }  
+  }
 
   /// Push a handler into the pool.
   bool push_handler(service_handler_t* handler_ptr)
@@ -218,7 +218,7 @@ private:
       delete handler_ptr;
 
       return false;
-    }    
+    }
 
     service_handler_ptr service_handler(handler_ptr,
           bind(&service_handler_pool::put_handler,

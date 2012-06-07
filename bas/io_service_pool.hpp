@@ -55,16 +55,13 @@ public:
       is_free_(true),
       block_(false)
   {
-    BOOST_ASSERT(pool_init_size != 0);
-    BOOST_ASSERT(pool_high_watermark >= pool_init_size);
-    BOOST_ASSERT(pool_thread_load != 0);
+    BOOST_ASSERT(pool_init_size_ != 0);
+    BOOST_ASSERT(pool_high_watermark_ >= pool_init_size_);
+    BOOST_ASSERT(pool_thread_load_ != 0);
 
     // Create io_service pool.
-    for (size_t i = 0; i < pool_init_size; ++i)
-    {
-      io_service_ptr io_service(new boost::asio::io_service);
-      io_services_.push_back(io_service);
-    }
+    for (size_t i = 0; i < pool_init_size_; ++i)
+      io_services_.push_back(io_service_ptr(new boost::asio::io_service));
   }
 
   /// Destruct the pool object.
@@ -162,11 +159,10 @@ public:
   boost::asio::io_service& get_io_service()
   {
     // Use a round-robin scheme to choose the next io_service to use.
-    boost::asio::io_service& io_service = *io_services_[next_io_service_];
-    if (++next_io_service_ == io_services_.size())
+    if (next_io_service_ >= io_services_.size())
       next_io_service_ = 0;
 
-    return io_service;
+    return *io_services_[next_io_service_++];
   }
 
   /// Get an io_service to use. if need then create one to use.
@@ -204,10 +200,7 @@ private:
 
     // Create additional io_service pool.
     for (size_t i = io_services_.size(); i < pool_init_size_; ++i)
-    {
-      io_service_ptr io_service(new boost::asio::io_service);
-      io_services_.push_back(io_service);
-    }
+      io_services_.push_back(io_service_ptr(new boost::asio::io_service));
 
     // Release redundant io_service pool.
     for (size_t i = io_services_.size(); i > pool_init_size_; --i)
@@ -260,14 +253,13 @@ private:
 
     // Give the io_service work to do so that its run() functions will not
     //   exit until work was explicitly destroyed.
-    work_ptr work(new boost::asio::io_service::work(*io_service));
-    work_.push_back(work);
+    work_.push_back(work_ptr(new boost::asio::io_service::work(*io_service)));
 
     // Create a thread to run the io_service.
-    thread_ptr thread(new boost::thread(
-        boost::bind(&io_service_pool::run_service, this, io_service)));
-
-    threads_.push_back(thread);
+    threads_.push_back(thread_ptr(new boost::thread(
+        boost::bind(&io_service_pool::run_service,
+            this,
+            io_service))));
   }
 
   /// Force stop all io_service objects in the pool.

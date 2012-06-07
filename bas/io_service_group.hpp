@@ -39,11 +39,14 @@ public:
   /// Constructor.
   io_service_group(size_t group_size = work_pool + 1,
       bool force_stop = false)
-    : io_service_pools_(group_size, io_service_pool_ptr(new io_service_pool(1, 1))),
+    : io_service_pools_(),
       force_stop_(force_stop),
       started_(false)
   {
     BOOST_ASSERT(group_size > work_pool);
+
+    for (size_t i = 0; i < group_size; ++i)
+      io_service_pools_.push_back(io_service_pool_ptr(new io_service_pool(1, 1)));
   }
 
   /// Destructor.
