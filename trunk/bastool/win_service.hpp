@@ -33,7 +33,7 @@ namespace bastool {
 class win_service
 {
 public:
-  typedef bastool::hash_map<std::string, win_service> service_table_t;
+  typedef bastool::hash_map<std::string, win_service*> service_table_t;
 
   win_service(server_base* server, const std::string& service_name)
     : server_(server),
@@ -56,7 +56,7 @@ public:
       return false;
 
     // Save the service into hash map.
-    services_.insert_update(service->get_service_name(), *service);
+    services_.insert_update(service->get_service_name(), service);
 
     // Use ANSI version.
     SERVICE_TABLE_ENTRYA service_table[] = {
@@ -364,7 +364,10 @@ protected:
   /// The entry point for the service.
   static VOID WINAPI service_main(DWORD argc, LPTSTR *argv)
   {
-    win_service* service = services_.find((char*)argv[0]);
+    win_service* service = 0;
+
+    if (!services_.find((char*)argv[0], service))
+      return;
 
     if (service == 0)
       return;
