@@ -14,6 +14,7 @@
 #include <boost/assert.hpp>
 #include <boost/swap.hpp>
 #include <boost/functional/hash.hpp>
+#include <bas/io_buffer.hpp>
 #include <algorithm>
 #include <memory>
 #include <vector>
@@ -21,6 +22,8 @@
 namespace bastool {
 
 #define BASTOOL_BYTE_STRING_DEFAULT_CAPACITY    256
+
+using namespace bas;
 
 /// Class for holding and processing unsigned char array.
 class byte_string
@@ -40,12 +43,18 @@ public:
   }
 
   /// Constructor with the specified data.
-  byte_string(size_t length, byte_t* data)
+  byte_string(size_t length, const byte_t* data)
     : buffer_(length, 0)
   {
     BOOST_ASSERT(data != 0);
 
     memcpy(&buffer_[0], data, length);
+  }
+
+  /// Constructor to filling with the specified byte.
+  byte_string(size_t length, byte_t byte)
+    : buffer_(length, byte)
+  {
   }
 
   /// Copy constructor.
@@ -54,10 +63,25 @@ public:
   {
   }
 
-  /// Assign from another.
-  byte_string& operator= (const byte_string& other)
+  /// Copy constructor from std::string.
+  byte_string(const std::string& other)
+    : buffer_(other.size() + 1, 0)
   {
-    buffer_ = other.buffer_;
+    memcpy(&buffer_[0], (const byte_t*)other.c_str(), other.size() + 1);
+  }
+
+  /// Copy constructor from io_buffer.
+  byte_string(const io_buffer& other)
+    : buffer_(other.size(), 0)
+  {
+    memcpy(&buffer_[0], other.data(), other.size());
+  }
+
+  /// Assign from other byte_string/std::string/io_buffer.
+  template<typename T>
+  byte_string& operator= (const T& other)
+  {
+    assign(other);
 
     return *this;
   }
@@ -92,8 +116,14 @@ public:
     return buffer_.capacity();
   }
 
-  /// Resize the buffer to the specified data.
-  void resize(size_t length, byte_t* data)
+  /// Erases all elements of the buffer.
+  void clear()
+  {
+    buffer_.clear();
+  }
+
+  /// Assign the buffer with the specified data.
+  void assign(size_t length, const byte_t* data)
   {
     BOOST_ASSERT(data != 0);
 
@@ -101,10 +131,99 @@ public:
     memcpy(&buffer_[0], data, length);
   }
 
+  /// Assign the buffer fill with the specified byte.
+  void assign(size_t length, byte_t byte)
+  {
+    buffer_.resize(length);
+    memset(&buffer_[0], byte, length);
+  }
+
+  /// Assign the buffer with other byte_string.
+  void assign(const byte_string& other)
+  {
+    buffer_ = other.buffer_;
+  }
+
+  /// Assign the buffer with other std::string.
+  void assign(const std::string& other)
+  {
+    assign(other.size() + 1, (const byte_t *)other.c_str());
+  }
+
+  /// Assign the buffer with other io_buffer.
+  void assign(const io_buffer& other)
+  {
+    assign(other.size(), other.data());
+  }
+
+  /// Append the buffer with the specified data.
+  void append(size_t length, const byte_t* data)
+  {
+    BOOST_ASSERT(data != 0);
+
+    size_t old_size = buffer_.size();
+    buffer_.resize(old_size + length);
+    memcpy(&buffer_[0] + old_size, data, length);
+  }
+
+  /// Append the buffer filling with the specified byte.
+  void append(size_t length, byte_t byte)
+  {
+    size_t old_size = buffer_.size();
+    buffer_.resize(old_size + length);
+    memset(&buffer_[0] + old_size, byte, length);
+  }
+
+  /// Append the buffer with other byte_string/io_buffer.
+  template<typename T>
+  void append(const T& other)
+  {
+    append(other.size(), other.data());
+  }
+
+  /// Append the buffer with the specified data.
+  void append(const std::string& other)
+  {
+    append(other.size() + 1, (const byte_t *)other.c_str());
+  }
+
+  /// Return part of the byte_string.
+  byte_string substr(size_t position, size_t length)
+  {
+    if (position + length > size() || length == 0)
+      position = length = 0;
+
+    return byte_string(length, data() + position);
+  }
+
+  /// Fill the buffer with the specified byte.
+  void fill(byte_t byte)
+  {
+    memset(&buffer_[0], byte, buffer_.size());
+  }
+
   /// Get hash value.
   const size_t hash_value() const
   {
     return boost::hash_range(buffer_.begin(), buffer_.end());
+  }
+
+  /// Append the buffer with other byte_string/std::string/io_buffer.
+  template<typename T>
+  byte_string& operator+ (const T& rhs)
+  {
+    this->append(rhs);
+
+    return *this;
+  }
+
+  /// Append the buffer with other byte_string/std::string/io_buffer.
+  template<typename T>
+  byte_string& operator+= (const T& rhs)
+  {
+    this->append(rhs);
+
+    return *this;
   }
 
   /// Compare for equality.

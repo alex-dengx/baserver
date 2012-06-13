@@ -81,10 +81,10 @@ public:
   }
 
   /// Find an entry in the map.
-  V* find(const K& k)
+  bool find(const K& k, V& v)
   {
     if (mutexs_ == NULL)
-      return NULL;
+      return false;
 
     size_t bucket_seat = calculate_hash_value(k) % num_buckets_;
     bucket_t& bucket = buckets_[bucket_seat];
@@ -96,24 +96,14 @@ public:
     for (size_t i = 0; i < bucket_size; ++i)
     {
       if (bucket[i].first == k)
-        return &bucket[i].second;
+      {
+        v = bucket[i].second;
+
+        return true;
+      }
     }
 
-    return NULL;
-  }
-
-  /// Find an entry in the map.
-  bool find(const K& k, V& v)
-  {
-    V* p = find(k);
-
-    if (p)
-    {
-      v = *p;
-      return true;
-    }
-    else
-      return false;
+    return false;
   }
 
   /// Insert a new entry into the map.
@@ -263,8 +253,8 @@ public:
   }
 
   /// Clean invalid entrys in the map.
-  template<typename Validator, typename Var_arg>
-  size_t clean(Validator& op, Var_arg var_arg)
+  template<typename Validator, typename Argument>
+  size_t clean(Validator& op, Argument arg)
   {
     size_t count = 0;
     
@@ -280,7 +270,40 @@ public:
       size_t bucket_size = bucket.size();
       for (size_t j = 0; j < bucket_size; ++j)
       {
-        if (!op.valid_check(bucket[j].first, bucket[j].second, var_arg))
+        if (!op.valid_check(bucket[j].first, bucket[j].second, arg))
+        {
+          if (j != bucket_size - 1)
+            bucket[j] = bucket[bucket_size - 1];
+
+          bucket.pop_back();
+          --bucket_size;
+          ++count;
+        }
+      }
+    }
+    
+    return count;
+  }
+
+  /// Clean invalid entrys in the map.
+  template<typename Argument>
+  size_t clean(bool (*valid_check)(const K&, const V&, const Argument&), Argument arg)
+  {
+    size_t count = 0;
+    
+    if ((mutexs_ == NULL) || (buckets_.size() != num_buckets_))
+      return count;
+
+    for (size_t i = 0; i < num_buckets_; ++i)
+    {
+      // Use write lock for exclusive write.
+      write_lock_t lock(mutexs_[i % num_mutexs_]);
+
+      bucket_t& bucket = buckets_[i];
+      size_t bucket_size = bucket.size();
+      for (size_t j = 0; j < bucket_size; ++j)
+      {
+        if (!valid_check(bucket[j].first, bucket[j].second, arg))
         {
           if (j != bucket_size - 1)
             bucket[j] = bucket[bucket_size - 1];
@@ -333,7 +356,7 @@ private:
     mutexs_ = new mutex_t[num_mutexs_];
     buckets_.resize(num_buckets_);
   }
-  
+
   /// Remove all entries from the map.
   void clear()
   {
