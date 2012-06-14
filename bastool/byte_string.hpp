@@ -81,9 +81,7 @@ public:
   template<typename T>
   byte_string& operator= (const T& other)
   {
-    assign(other);
-
-    return *this;
+    return assign(other);
   }
 
   /// Return a pointer to the data.
@@ -92,7 +90,7 @@ public:
     return &buffer_[0];
   }
 
-  /// Return a pointer to the data.
+  /// Return a const pointer to the data.
   const byte_t* data() const
   {
     return &buffer_[0];
@@ -123,83 +121,137 @@ public:
   }
 
   /// Assign the buffer with the specified data.
-  void assign(size_t length, const byte_t* data)
+  byte_string& assign(size_t length, const byte_t* data)
   {
     BOOST_ASSERT(data != 0);
 
     buffer_.resize(length);
     memcpy(&buffer_[0], data, length);
+
+    return *this;
   }
 
   /// Assign the buffer fill with the specified byte.
-  void assign(size_t length, byte_t byte)
+  byte_string& assign(size_t length, byte_t byte)
   {
     buffer_.resize(length);
     memset(&buffer_[0], byte, length);
+
+    return *this;
   }
 
   /// Assign the buffer with other byte_string.
-  void assign(const byte_string& other)
+  byte_string& assign(const byte_string& other)
   {
     buffer_ = other.buffer_;
+
+    return *this;
   }
 
   /// Assign the buffer with other std::string.
-  void assign(const std::string& other)
+  byte_string& assign(const std::string& other)
   {
-    assign(other.size() + 1, (const byte_t *)other.c_str());
+    return assign(other.size() + 1, (const byte_t *)other.c_str());
   }
 
   /// Assign the buffer with other io_buffer.
-  void assign(const io_buffer& other)
+  byte_string& assign(const io_buffer& other)
   {
-    assign(other.size(), other.data());
+    return assign(other.size(), other.data());
   }
 
   /// Append the buffer with the specified data.
-  void append(size_t length, const byte_t* data)
+  byte_string& append(size_t length, const byte_t* data)
   {
     BOOST_ASSERT(data != 0);
 
     size_t old_size = buffer_.size();
     buffer_.resize(old_size + length);
     memcpy(&buffer_[0] + old_size, data, length);
+
+    return *this;
   }
 
   /// Append the buffer filling with the specified byte.
-  void append(size_t length, byte_t byte)
+  byte_string& append(size_t length, byte_t byte)
   {
     size_t old_size = buffer_.size();
     buffer_.resize(old_size + length);
     memset(&buffer_[0] + old_size, byte, length);
+
+    return *this;
   }
 
   /// Append the buffer with other byte_string/io_buffer.
   template<typename T>
-  void append(const T& other)
+  byte_string& append(const T& other)
   {
-    append(other.size(), other.data());
+    return append(other.size(), other.data());
   }
 
   /// Append the buffer with the specified data.
-  void append(const std::string& other)
+  byte_string& append(const std::string& other)
   {
-    append(other.size() + 1, (const byte_t *)other.c_str());
+    return append(other.size() + 1, (const byte_t *)other.c_str());
   }
 
-  /// Return part of the byte_string.
-  byte_string substr(size_t position, size_t length)
+  /// Appends a single byte to the buffer, increasing its size by one.
+  void push_back(byte_t byte)
   {
-    if (position + length > size() || length == 0)
+    buffer_.push_back(byte);
+  }
+
+  /// Return part of the buffer.
+  byte_string substr(size_t position = 0, size_t length = std::string::npos)
+  {
+    size_t this_size = size();
+
+    if (length == std::string::npos && position < this_size)
+      length = this_size - position;
+
+    if (position + length > this_size || length == 0 || \
+        length > this_size || position >= this_size)
       position = length = 0;
 
     return byte_string(length, data() + position);
   }
 
-  /// Fill the buffer with the specified byte.
-  void fill(byte_t byte)
+  /// Replaces a section of the buffer by some other content determined by the arguments passed.
+  byte_string& replace(size_t position, size_t length, const byte_string& other)
   {
-    memset(&buffer_[0], byte, buffer_.size());
+    size_t old_size = size();
+    size_t add_size = other.size();
+
+    if (length == std::string::npos && position < old_size)
+      length = old_size - position;
+
+    if (position + length > old_size || length == 0 || \
+        length > old_size || position >= old_size)
+      return *this;
+
+    if (length != add_size)
+    {
+      if (length > add_size)
+      {
+        memmove(&buffer_[0] + position + add_size, &buffer_[0] + position + length, old_size - position - length);
+        buffer_.resize(old_size - length + add_size);
+      }
+      else
+      {
+        buffer_.resize(old_size - length + add_size);
+        memmove(&buffer_[0] + position + add_size, &buffer_[0] + position + length, old_size - position - length);
+      }
+    }
+
+    memcpy(&buffer_[0] + position, other.data(), add_size);
+
+    return *this;
+  }
+
+  /// Erases a part of the buffer, shortening the length of the buffer.
+  byte_string& erase(size_t position = 0, size_t length = std::string::npos)
+  {
+    return replace(position, length, byte_string(0));
   }
 
   /// Get hash value.
@@ -208,22 +260,30 @@ public:
     return boost::hash_range(buffer_.begin(), buffer_.end());
   }
 
-  /// Append the buffer with other byte_string/std::string/io_buffer.
-  template<typename T>
-  byte_string& operator+ (const T& rhs)
+  /// Returns a const reference the byte at position in the buffer.
+  const byte_t& operator[] (size_t position) const
   {
-    this->append(rhs);
+    return buffer_[position];
+  }
 
-    return *this;
+  /// Returns a reference the byte at position in the buffer.
+  byte_t& operator[] (size_t position)
+  {
+    return buffer_[position];
+  }
+
+  /// Returns a byte_string object whose contents are the combination of the content of this followed by those of rhs.
+  template<typename T>
+  byte_string operator+ (const T& rhs)
+  {
+    return byte_string(*this).append(rhs);
   }
 
   /// Append the buffer with other byte_string/std::string/io_buffer.
   template<typename T>
   byte_string& operator+= (const T& rhs)
   {
-    this->append(rhs);
-
-    return *this;
+    return append(rhs);
   }
 
   /// Compare for equality.
@@ -272,6 +332,13 @@ private:
   /// The data in the buffer.
   std::vector<byte_t> buffer_;
 };
+
+/// Returns a byte_string object whose contents are the combination of the content of lhs followed by those of rhs.
+template<typename T>
+byte_string operator+ (const T& lhs, const byte_string&rhs)
+{
+  return byte_string(lhs).append(rhs);
+}
 
 } // namespace bastool
 
