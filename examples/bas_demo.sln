@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "echo_server", "echo\echo_se
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "echo_client", "echo\echo_client.vcxproj", "{23979495-BFA6-45B6-9BA9-A460E56236C8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sync_client", "echo\sync_client.vcxproj", "{302481BE-795D-4508-AE97-2FD906EE5701}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "http_server", "http\http_server.vcxproj", "{A46436D7-E579-4AAB-85E5-59E485438668}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "proxy_server", "proxy\proxy_server.vcxproj", "{BAEFC6F5-29F7-4589-BECC-53C9F1E02A1B}"

@@ -149,6 +149,23 @@ public:
     end_offset_ += count;
   }
 
+  /// Produce data to the ending of the buffer.
+  void produce(size_t length, const byte_t* data)
+  {
+    BOOST_ASSERT(length <= space());
+
+    memcpy(&buffer_[0] + end_offset_, data, length);
+
+    end_offset_ += length;
+  }
+
+  /// Produce other buffer to the ending of the buffer.
+  template<typename Buffer>
+  void produce(const Buffer& other)
+  {
+    produce(other.size(), other.data());
+  }
+
   /// Remove consumed bytes from the beginning of the buffer.
   void crunch()
   {

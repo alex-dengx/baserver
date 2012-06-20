@@ -107,7 +107,7 @@ public:
   {
     return buffer_.size();
   }
-  
+
   /// Returns the size of the allocated storage space for data in the buffer.
   size_t capacity() const
   {
