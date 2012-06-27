@@ -21,7 +21,7 @@
 
 namespace bastool {
 
-#define BASTOOL_BYTE_STRING_DEFAULT_CAPACITY    256
+#define BASTOOL_BYTE_STRING_DEFAULT_CAPACITY    32
 
 using namespace bas;
 
@@ -65,9 +65,9 @@ public:
 
   /// Copy constructor from std::string.
   byte_string(const std::string& other)
-    : buffer_(other.size() + 1, 0)
+    : buffer_(other.size(), 0)
   {
-    memcpy(&buffer_[0], (const byte_t*)other.c_str(), other.size() + 1);
+    memcpy(&buffer_[0], (const byte_t*)other.c_str(), other.size());
   }
 
   /// Copy constructor from io_buffer.
@@ -151,13 +151,19 @@ public:
   /// Assign the buffer with other std::string.
   byte_string& assign(const std::string& other)
   {
-    return assign(other.size() + 1, (const byte_t *)other.c_str());
+    return assign(other.size(), (const byte_t *)other.c_str());
   }
 
   /// Assign the buffer with other io_buffer.
   byte_string& assign(const io_buffer& other)
   {
     return assign(other.size(), other.data());
+  }
+
+  /// Sets byte as the value for all the elements in the buffer.
+  void fill(byte_t byte)
+  {
+    memset(&buffer_[0], byte, buffer_.size());
   }
 
   /// Append the buffer with the specified data.
@@ -192,7 +198,7 @@ public:
   /// Append the buffer with the specified data.
   byte_string& append(const std::string& other)
   {
-    return append(other.size() + 1, (const byte_t *)other.c_str());
+    return append(other.size(), (const byte_t *)other.c_str());
   }
 
   /// Appends a single byte to the buffer, increasing its size by one.
