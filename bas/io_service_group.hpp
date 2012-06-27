@@ -102,15 +102,15 @@ public:
       return;
 
     // Stop all io_service_pool.
-    for (size_t i = 0; i < io_service_pools_.size(); ++i)
-      io_service_pools_[i]->stop(force_stop_);
+    for (size_t i = io_service_pools_.size(); i > 0; --i)
+      io_service_pools_[i - 1]->stop(force_stop_);
 
     // For gracefully close, continue to repeat several times to dispatch and perform asynchronous operations/handlers.
     while (!force_stop_)
     {
       bool idle = true;
-      for (size_t i = 0; idle && i < io_service_pools_.size(); ++i)
-        idle = io_service_pools_[i]->idle();
+      for (size_t i = io_service_pools_.size(); idle && i > 0; --i)
+        idle = io_service_pools_[i - 1]->idle();
 
       if (idle)
         break;
@@ -120,8 +120,8 @@ public:
         io_service_pools_[i - 1]->start();
 
       // Stop all io_service_pool with graceful mode.
-      for (size_t i = 0; i < io_service_pools_.size(); ++i)
-        io_service_pools_[i]->stop();
+      for (size_t i = io_service_pools_.size(); i > 0; --i)
+        io_service_pools_[i - 1]->stop();
     }
 
     started_ = false;
@@ -132,8 +132,8 @@ private:
   void clear()
   {
     // Stop all io_service_pool.
-    for (size_t i = 0; i < io_service_pools_.size(); ++i)
-      io_service_pools_[i].reset();
+    for (size_t i = io_service_pools_.size(); i > 0; --i)
+      io_service_pools_[i - 1].reset();
 
     io_service_pools_.clear();
   }

@@ -71,8 +71,8 @@ public:
     stop();
 
     // Destroy io_service pool.
-    for (size_t i = 0; i < io_services_.size(); ++i)
-      io_services_[i].reset();
+    for (size_t i = io_services_.size(); i > 0 ; --i)
+      io_services_[i - 1].reset();
 
     io_services_.clear();
   }
@@ -86,7 +86,7 @@ public:
     BOOST_ASSERT(pool_high_watermark >= pool_init_size);
     BOOST_ASSERT(pool_thread_load != 0);
 
-    if (threads_.size() == 0)
+    if (threads_.empty())
     {
       pool_init_size_ = pool_init_size;
       pool_high_watermark_ = pool_high_watermark;
@@ -129,7 +129,7 @@ public:
   /// Start all io_service objects, default with non-bocked mode.
   void start(bool blocked = false)
   {
-    if (threads_.size() != 0)
+    if (!threads_.empty())
       return;
 
     {
@@ -150,8 +150,8 @@ public:
       idle_ = true;
 
       // Start all io_service.
-      for (size_t i = 0; i < io_services_.size(); ++i)
-        start_one(io_services_[i]);
+      for (size_t i = io_services_.size(); i > 0 ; --i)
+        start_one(io_services_[i - 1]);
     }
 
     // If in block mode, wait for all threads to exit.
@@ -162,7 +162,7 @@ public:
   /// Stop all io_service objects, default with gracefully mode.
   void stop(bool force = false)
   {
-    if (work_.size() == 0)
+    if (work_.empty())
       return;
 
     {
@@ -171,8 +171,8 @@ public:
 
       // Allow all operations and handlers to be finished normally,
       //   the work object may be explicitly destroyed.
-      for (size_t i = 0; i < work_.size(); ++i)
-        work_[i].reset();
+      for (size_t i = work_.size(); i > 0 ; --i)
+        work_[i - 1].reset();
 
       work_.clear();
     }
@@ -208,17 +208,18 @@ public:
     // Lock for synchronize access to data.
     scoped_lock_t lock(mutex_);
 
+    size_t service_count = io_services_.size();
     if (!blocked_                            && \
-        work_.size() != 0                    && \
-        threads_.size() != 0                 && \
-        threads_number > io_services_.size() && \
-        io_services_.size() < pool_high_watermark_)
+        !work_.empty()                       && \
+        !threads_.empty()                    && \
+        threads_number > service_count       && \
+        service_count < pool_high_watermark_)
     {
       // Create new io_service and start it.
       io_service_ptr io_service(new boost::asio::io_service);
       io_services_.push_back(io_service);
       start_one(io_service);
-      next_io_service_ = io_services_.size() - 1;
+      next_io_service_ = service_count;
     }
 
     return get_io_service();
@@ -228,16 +229,16 @@ private:
   typedef boost::shared_ptr<boost::asio::io_service> io_service_ptr;
   typedef boost::shared_ptr<boost::asio::io_service::work> work_ptr;
   typedef boost::shared_ptr<boost::thread> thread_ptr;
-  
+
   /// Wait for all threads in the pool to exit.
   void wait()
   {
-    if (threads_.size() == 0)
+    if (threads_.empty())
       return;
 
     // Wait for all threads in the pool to exit.
-    for (size_t i = 0; i < threads_.size(); ++i)
-      threads_[i]->join();
+    for (size_t i = threads_.size(); i > 0 ; --i)
+      threads_[i - 1]->join();
 
     // Destroy all threads.
     threads_.clear();
@@ -268,18 +269,17 @@ private:
     work_.push_back(work_ptr(new boost::asio::io_service::work(*io_service)));
 
     // Create a thread to run the io_service.
-    threads_.push_back(thread_ptr(new boost::thread(
-        boost::bind(&io_service_pool::run_service,
-            this,
-            io_service))));
+    threads_.push_back(thread_ptr(new boost::thread(boost::bind(&io_service_pool::run_service,
+                                                                this,
+                                                                io_service))));
   }
 
   /// Force stop all io_service objects in the pool.
   void force_stop(void)
   {
     // Force stop all io_service, maybe some handlers cannot be dispatched.
-    for (size_t i = 0; i < io_services_.size(); ++i)
-      io_services_[i]->stop();
+    for (size_t i = io_services_.size(); i > 0; --i)
+      io_services_[i - 1]->stop();
   }
 
 private:

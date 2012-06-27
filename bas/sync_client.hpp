@@ -88,11 +88,14 @@ public:
     // Lock for synchronize access to data.
     scoped_lock_t lock(mutex_);
 
-    if (endpoint_pairs_.size() == 0)
+    size_t pair_count = endpoint_pairs_.size();
+    if (pair_count == 1)
+      return endpoint_pairs_[0];
+    if (pair_count == 0)
       return endpoint_pair_t(endpoint_t(), endpoint_t());
 
     // Use a round-robin scheme to choose the next endpoint to use.
-    if (next_endpoint_ >= endpoint_pairs_.size())
+    if (next_endpoint_ >= pair_count)
       next_endpoint_ = 0;
 
     return endpoint_pairs_[next_endpoint_++];
@@ -211,7 +214,7 @@ public:
     clear();
   }
 
-  /// Get an sync_handler to use.
+  /// Get one sync_handler to use.
   sync_handler_ptr get_sync_handler()
   {
     sync_handler_ptr sync_handler;
@@ -229,7 +232,7 @@ public:
       if (sync_handlers_.size() <= pool_low_watermark_ && handler_count_ < pool_maximum_)
         create_handler(pool_increment_);
 
-      if (sync_handlers_.size() > 0)
+      if (!sync_handlers_.empty())
       {
         sync_handler = sync_handlers_.back();
         sync_handlers_.pop_back();
@@ -246,7 +249,7 @@ public:
     return sync_handler;
   }
 
-  /// Put a handler to the pool.
+  /// Put the handler to the pool.
   void put_handler(sync_handler_t* handler_ptr)
   {
     BOOST_ASSERT(handler_ptr != 0);
@@ -280,8 +283,8 @@ private:
 
     closed_ = true;
 
-    for (size_t i = 0; i < sync_handlers_.size(); ++i)
-      sync_handlers_[i].reset();
+    for (size_t i = sync_handlers_.size(); i > 0 ; --i)
+      sync_handlers_[i - 1].reset();
 
     sync_handlers_.clear();
   }

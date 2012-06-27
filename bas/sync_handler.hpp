@@ -109,6 +109,18 @@ public:
     return socket_;
   }
 
+  /// Get the peer_endpoint associated with the handler.
+  endpoint_t& peer_endpoint()
+  {
+    return peer_endpoint_;
+  }
+
+  /// Get the local_endpoint associated with the handler.
+  endpoint_t& local_endpoint()
+  {
+    return local_endpoint_;
+  }
+
   /// Close the handler.
   void close()
   {
@@ -262,7 +274,7 @@ public:
   {
     bytes_transferred = 0;
 
-    if (buffer().size() == 0)
+    if (buffer().empty())
       return error_t(boost::asio::error::invalid_argument);
     else
       return write(boost::asio::buffer(buffer().data(), buffer().size()),
@@ -313,7 +325,7 @@ public:
   {
     bytes_transferred = 0;
 
-    if (buffer().size() == 0)
+    if (buffer().empty())
       return error_t(boost::asio::error::invalid_argument);
 
     // Lock for synchronize access to data.
