@@ -94,7 +94,7 @@ public:
   }
 
   /// Return the amount of unread data in the buffer.
-  size_t size() const
+  const size_t size() const
   {
     return end_offset_ - begin_offset_;
   }
@@ -105,9 +105,7 @@ public:
     BOOST_ASSERT(length <= capacity());
 
     if (begin_offset_ + length <= capacity())
-    {
       end_offset_ = begin_offset_ + length;
-    }
     else
     {
       memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
@@ -123,7 +121,7 @@ public:
   }
 
   /// Return the amount of free space in the buffer.
-  size_t space() const
+  const size_t space() const
   {
     return capacity() - end_offset_;
   }
@@ -134,11 +132,8 @@ public:
     BOOST_ASSERT(count <= size());
 
     begin_offset_ += count;
-
     if (empty())
-    {
       clear();
-    }
   }
 
   /// Produce multiple bytes to the ending of the buffer.
@@ -155,7 +150,6 @@ public:
     BOOST_ASSERT(length <= space());
 
     memcpy(&buffer_[0] + end_offset_, data, length);
-
     end_offset_ += length;
   }
 
@@ -171,15 +165,13 @@ public:
   {
     if (begin_offset_ != 0)
     {
-      if (begin_offset_ != end_offset_)
+      if (empty())
+        clear();
+      else
       {
         memmove(&buffer_[0], &buffer_[0] + begin_offset_, size());
         end_offset_ = size();
         begin_offset_ = 0;
-      }
-      else
-      {
-        clear();
       }
     }
   }

@@ -24,7 +24,7 @@
 namespace bas {
 
 /// Struct for deliver event cross multiple hander.
-struct event
+struct event_t
 {
   /// Define type reference of std::size_t.
   typedef std::size_t size_t;
@@ -45,7 +45,7 @@ struct event
   size_t value;
   boost::system::error_code ec;
 
-  event(size_t s = 0,
+  event_t(size_t s = 0,
       size_t v = 0,
       boost::system::error_code e = boost::system::error_code())
     : state(s),
@@ -55,8 +55,8 @@ struct event
   }
 };
 
-/// Define type reference of enevt.
-typedef event event_t;
+/// Define type reference of enevt_t.
+typedef event_t event;
 
 /// Object for handle socket asynchronous operations.
 template<typename Work_Handler, typename Socket_Service = boost::asio::ip::tcp::socket>
@@ -147,122 +147,118 @@ public:
     return *socket_;
   }
 
-  /// Close the handler with error_code e from any thread.
-  void close(const boost::system::error_code& e)
+  /// Close the handler with the given error_code from any thread.
+  void close(const boost::system::error_code& ec)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
     // Dispatch to io_service thread.
     io_service().dispatch(boost::bind(&service_handler_t::close_i,
-        shared_from_this(),
-        e));
+                                      shared_from_this(),
+                                      ec));
   }
 
-  /// Close the handler with error_code 0 from any thread.
+  /// Close the handler with the error_code 0 from any thread.
   void close()
   {
-    close(boost::system::error_code(0, boost::system::get_system_category()));
+    close(boost::system::error_code());
   }
 
-  /// Start an asynchronous operation from any thread to read any amount of data from the socket.
-  ///   Caller must be sure that read_buffer().space() > 0.
+  /// Start asynchronous read operation from any thread.
+  /// Caller must be sure that read_buffer().space() > 0.
   void async_read_some()
   {
     if (read_buffer().space() == 0)
     {
-      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
-
+      close(boost::asio::error::no_buffer_space);
       return;
     }
-    
+
     async_read_some(boost::asio::buffer(read_buffer().data() + read_buffer().size(), read_buffer().space()));
   }
 
-  /// Start an asynchronous operation from any thread to read any amount of data to buffers from the socket.
+  /// Start asynchronous read operation from any thread.
   template<typename Buffers>
   void async_read_some(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_t::async_read_some_i<Buffers>,
-        shared_from_this(),
-        buffers));
+                                      shared_from_this(),
+                                      buffers));
   }
 
-  /// Start an asynchronous operation from any thread to read a certain amount of data from the socket.
-  ///   Caller must be sure that length != 0 and length <= read_buffer().space().
+  /// Start asynchronous read operation from any thread.
+  /// Caller must be sure that length != 0 and length <= read_buffer().space().
   void async_read(size_t length)
   {
     if ((length == 0) || (length > read_buffer().space()))
     {
-      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
-
+      close(boost::asio::error::no_buffer_space);
       return;
     }
 
     async_read(boost::asio::buffer(read_buffer().data() + read_buffer().size(), length));
   }
 
-  /// Start an asynchronous operation from any thread to read a certain amount of data to buffers from the socket.
+  /// Start asynchronous read operation from any thread.
   template<typename Buffers>
   void async_read(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_t::async_read_i<Buffers>,
-        shared_from_this(),
-        buffers));
+                                      shared_from_this(),
+                                      buffers));
   }
 
-  /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
-  ///   Caller must be sure that write_buffer().size() > 0.
+  /// Start asynchronous write operation from any thread.
+  /// Caller must be sure that write_buffer() not empty.
   void async_write()
   {
-    if (write_buffer().size() == 0)
+    if (write_buffer().empty())
     {
-      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
-
+      close(boost::asio::error::no_buffer_space);
       return;
     }
 
     async_write(boost::asio::buffer(write_buffer().data(), write_buffer().size()));
   }
 
-  /// Start an asynchronous operation from any thread to write a certain amount of data to the socket.
-  ///   Caller must be sure that length != 0 and length <= write_buffer().size().
+  /// Start asynchronous write operation from any thread.
+  /// Caller must be sure that length != 0 and length <= write_buffer().size().
   void async_write(size_t length)
   {
     if ((length == 0) || (length > write_buffer().size()))
     {
-      close(boost::system::error_code(boost::asio::error::no_buffer_space, boost::system::get_system_category()));
-
+      close(boost::asio::error::no_buffer_space);
       return;
     }
-    
+
     async_write(boost::asio::buffer(write_buffer().data(), length));
   }
 
-  /// Start an asynchronous operation from any thread to write buffers to the socket.
+  /// Start asynchronous write operation from any thread.
   template<typename Buffers>
   void async_write(const Buffers& buffers)
   {
     io_service().dispatch(boost::bind(&service_handler_t::async_write_i<Buffers>,
-        shared_from_this(),
-        buffers));
+                                      shared_from_this(),
+                                      buffers));
   }
 
   /// Post event to the child handler from the parent handler.
-  void parent_post(const bas::event event)
+  void parent_post(const event_t event)
   {
     work_service().post(boost::bind(&service_handler_t::do_parent,
-        shared_from_this(),
-        event));
+                                    shared_from_this(),
+                                    event));
   }
 
   /// Post event to the parent handler from the child handler.
-  void child_post(const bas::event event)
+  void child_post(const event_t event)
   {
     work_service().post(boost::bind(&service_handler_t::do_child,
-        shared_from_this(),
-        event));
+                                    shared_from_this(),
+                                    event));
   }
 
 private:
@@ -273,8 +269,8 @@ private:
   /// Bind a service_handler with the given io_service and work_service.
   template<typename Work_Allocator>
   void bind(io_service_t& io_service,
-      io_service_t& work_service,
-      Work_Allocator& work_allocator)
+            io_service_t& work_service,
+            Work_Allocator& work_allocator)
   {
     stopped_ = false;
 
@@ -282,7 +278,6 @@ private:
 
     if (session_timeout_ != 0)
       session_timer_.reset(new boost::asio::deadline_timer(io_service));
-
     if (io_timeout_ != 0)
       io_timer_.reset(new boost::asio::deadline_timer(io_service));
 
@@ -294,7 +289,7 @@ private:
     write_buffer().clear();
 
     // Clear work handler for new operations.
-    //   Only low-level operations used to perform the necessary and should return ASAP.
+    // Only necessary operations performed and should return ASAP.
     work_handler_->on_clear(*this);
   }
 
@@ -313,29 +308,29 @@ private:
     write_buffer().clear();
   }
 
-  /// Start an asynchronous connect, can be call from any thread.
+  /// Start asynchronous connect, can be call from any thread.
   void connect(endpoint_t& peer_endpoint,
-      endpoint_t& local_endpoint = endpoint_t())
+               endpoint_t& local_endpoint = endpoint_t())
   {
     io_service().dispatch(boost::bind(&service_handler_t::connect_i,
-        shared_from_this(),
-        peer_endpoint,
-        local_endpoint));
+                                      shared_from_this(),
+                                      peer_endpoint,
+                                      local_endpoint));
   }
 
-  /// Start an asynchronous connect, can be call from any thread.
+  /// Start asynchronous connect, can be call from any thread.
   template<typename Per_connection_data>
   void connect(Per_connection_data& data,
-      endpoint_t& peer_endpoint,
-      endpoint_t& local_endpoint = endpoint_t())
+               endpoint_t& peer_endpoint,
+               endpoint_t& local_endpoint = endpoint_t())
   {
     // Set per_connection_data.
     work_handler_->set_data(data);
 
     io_service().dispatch(boost::bind(&service_handler_t::connect_i,
-        shared_from_this(),
-        peer_endpoint,
-        local_endpoint));
+                                      shared_from_this(),
+                                      peer_endpoint,
+                                      local_endpoint));
   }
 
   /// Start the first operation, can be call from any thread.
@@ -345,48 +340,48 @@ private:
     BOOST_ASSERT(io_service_ != 0);
     BOOST_ASSERT(work_service_ != 0);
 
-    // If start from connect, timer has been setted, set it again.
-    //   Set timer for session timeout.
+    // Set timer for session timeout. If start from connect, set it again.
     set_session_expiry();
 
     // Post to work_service for executing do_open.
     work_service().post(boost::bind(&service_handler_t::do_open,
-        shared_from_this()));
+                                    shared_from_this()));
   }
 
 private:
   /// Start an asynchronous connect from io_service thread.
-  void connect_i(endpoint_t& peer_endpoint,
-      endpoint_t& local_endpoint)
+  void connect_i(endpoint_t& peer_endpoint, endpoint_t& local_endpoint)
   {
     BOOST_ASSERT(socket_.get() != 0);
     BOOST_ASSERT(io_service_ != 0);
     BOOST_ASSERT(work_service_ != 0);
 
-    // Set timer for session timeout.
-    set_session_expiry();
-    
     if (local_endpoint != endpoint_t())
     {
       // Opening and binding lowest_layer socket to the given local endpoint.
-      socket().lowest_layer().open(local_endpoint.protocol());
+      boost::system::error_code ec;
+      socket().lowest_layer().open(local_endpoint.protocol(), ec);
+      if (!ec)
+        socket().lowest_layer().bind(local_endpoint, ec);
 
-      boost::system::error_code e;
-      socket().lowest_layer().bind(local_endpoint, e);
-      if (e)
+      // If error occurred, close the handler.
+      if (ec)
       {
-        // Close with error_code e.
-        close_i(e);
-
+        close_i(ec);
         return;
       }
     }
 
+    // Set timer for session timeout.
+    set_session_expiry();
+    // Set timer for i/o operation timeout.
+    set_io_expiry();
+
     // Use lowest_layer socket for ssl.
     socket().lowest_layer().async_connect(peer_endpoint,
-        boost::bind(&service_handler_t::handle_connect,
-            shared_from_this(),
-            boost::asio::placeholders::error));
+                                boost::bind(&service_handler_t::handle_connect,
+                                            shared_from_this(),
+                                            boost::asio::placeholders::error));
   }
 
   /// Start an asynchronous operation from io_service thread to read any amount of data to buffers from the socket.
@@ -397,14 +392,14 @@ private:
     if (stopped_)
       return;
 
-    // Set timer for io operation timeout.
+    // Set timer for i/o operation timeout.
     set_io_expiry();
 
     socket().async_read_some(buffers,
-        boost::bind(&service_handler_t::handle_read,
-            shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                  boost::bind(&service_handler_t::handle_read,
+                              shared_from_this(),
+                              boost::asio::placeholders::error,
+                              boost::asio::placeholders::bytes_transferred));
   }
 
   /// Start an asynchronous operation from io_service thread to read a certain amount of data to buffers from the socket.
@@ -415,15 +410,15 @@ private:
     if (stopped_)
       return;
 
-    // Set timer for io operation timeout.
+    // Set timer for i/o operation timeout.
     set_io_expiry();
 
     boost::asio::async_read(socket(),
-        buffers,
-        boost::bind(&service_handler_t::handle_read,
-            shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                     buffers,
+                     boost::bind(&service_handler_t::handle_read,
+                                 shared_from_this(),
+                                 boost::asio::placeholders::error,
+                                 boost::asio::placeholders::bytes_transferred));
   }
 
   /// Start an asynchronous operation from io_service thread to write buffers to the socket.
@@ -434,15 +429,15 @@ private:
     if (stopped_)
       return;
 
-    // Set timer for io operation timeout.
+    // Set timer for i/o operation timeout.
     set_io_expiry();
 
     boost::asio::async_write(socket(),
-        buffers,
-        boost::bind(&service_handler_t::handle_write,
-            shared_from_this(),
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                     buffers,
+                     boost::bind(&service_handler_t::handle_write,
+                                 shared_from_this(),
+                                 boost::asio::placeholders::error,
+                                 boost::asio::placeholders::bytes_transferred));
   }
 
   /// Set timer for session timeout.
@@ -453,8 +448,8 @@ private:
 
     session_timer_->expires_from_now(boost::posix_time::seconds(session_timeout_));
     session_timer_->async_wait(boost::bind(&service_handler_t::handle_timeout,
-        shared_from_this(),
-        boost::asio::placeholders::error));
+                                           shared_from_this(),
+                                           boost::asio::placeholders::error));
   }
 
   /// Cancel timer for session timeout.
@@ -464,7 +459,7 @@ private:
       session_timer_->cancel();
   }
 
-  /// Set timer for io operation timeout.
+  /// Set timer for i/o operation timeout.
   void set_io_expiry(void)
   {
     if ((io_timeout_ == 0) || (io_timer_.get() == 0))
@@ -472,11 +467,11 @@ private:
 
     io_timer_->expires_from_now(boost::posix_time::seconds(io_timeout_));
     io_timer_->async_wait(boost::bind(&service_handler_t::handle_timeout,
-        shared_from_this(),
-        boost::asio::placeholders::error));
+                                      shared_from_this(),
+                                      boost::asio::placeholders::error));
   }
 
-  /// Cancel timer for io operation timeout.
+  /// Cancel timer for i/o operation timeout.
   void cancel_io_expiry(void)
   {
     if (io_timer_.get() != 0)
@@ -484,94 +479,75 @@ private:
   }
 
   /// Handle completion of a connect operation in io_service thread.
-  void handle_connect(const boost::system::error_code& e)
+  void handle_connect(const boost::system::error_code& ec)
   {
     // The handler has been stopped, do nothing.
     if (stopped_)
       return;
 
-    if (!e)
-    {
+    // Cancel timer for i/o operation timeout, even if expired.
+    cancel_io_expiry();
+
+    if (!ec)
       start();
-    }
     else
-    {
-      // Close with error_code e.
-      close_i(e);
-    }
+      close_i(ec);
   }
 
   /// Handle completion of a read operation in io_service thread.
-  void handle_read(const boost::system::error_code& e,
-      size_t bytes_transferred)
+  void handle_read(const boost::system::error_code& ec, size_t bytes_transferred)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
-    // Cancel timer for io operation timeout, even if expired.
+    // Cancel timer for i/o operation timeout, even if expired.
     cancel_io_expiry();
 
-    if (!e)
+    if (!ec)
     {
       // Post to work_service for executing do_read.
       work_service().post(boost::bind(&service_handler_t::do_read,
-          shared_from_this(),
-          bytes_transferred));
+                                      shared_from_this(),
+                                      bytes_transferred));
     }
     else
-    {
-      // Close with error_code e.
-      close_i(e);
-    }
+      close_i(ec);
   }
 
   /// Handle completion of a write operation in io_service thread.
-  void handle_write(const boost::system::error_code& e,
-      size_t bytes_transferred)
+  void handle_write(const boost::system::error_code& ec, size_t bytes_transferred)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
-    // Cancel timer for io operation timeout, even if expired.
+    // Cancel timer for i/o operation timeout, even if expired.
     cancel_io_expiry();
 
-    if (!e)
+    if (!ec)
     {
       // Post to work_service for executing do_write.
       work_service().post(boost::bind(&service_handler_t::do_write,
-          shared_from_this(),
-          bytes_transferred));
+                                      shared_from_this(),
+                                      bytes_transferred));
     }
     else
-    {
-      // Close with error_code e.
-      close_i(e);
-    }
+      close_i(ec);
   }
 
-  /// Handle timeout of whole operation in io_service thread.
-  void handle_timeout(const boost::system::error_code& e)
+  /// Handle timeout in io_service thread.
+  void handle_timeout(const boost::system::error_code& ec)
   {
-    // The handler has been stopped or timer has been cancelled, do nothing.
-    if (stopped_ || e == boost::asio::error::operation_aborted)
+    // The handler is stopped or timer is cancelled, do nothing.
+    if (stopped_ || ec == boost::asio::error::operation_aborted)
       return;
 
-    if (!e)
-    {
-      // Close with error_code boost::system::timed_out.
-      close_i(boost::system::error_code(boost::asio::error::timed_out, boost::system::get_system_category()));
-    }
-    else
-    {
-      // Close with error_code e.
-      close_i(e);
-    }
+    close_i((ec) ? ec : boost::asio::error::timed_out);
   }
 
   /// Close the handler in io_service thread.
-  void close_i(const boost::system::error_code& e)
+  void close_i(const boost::system::error_code& ec)
   {
     if (!stopped_)
     {
@@ -582,22 +558,21 @@ private:
       socket().lowest_layer().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
       socket().lowest_layer().close(ignored_ec);
 
-      // Timer has not been expired, or expired but not dispatched,
-      //   cancel it even if expired.
+      // Timer is not expired or expired but not dispatched, cancel it.
       cancel_session_expiry();
       cancel_io_expiry();
 
       // Post to work_service to executing do_close.
       work_service().post(boost::bind(&service_handler_t::do_close,
-          shared_from_this(),
-          e));
+                                      shared_from_this(),
+                                      ec));
     }
   }
 
   /// Do on_open in work_service thread.
   void do_open()
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -608,7 +583,7 @@ private:
   /// Do on_read in work_service thread.
   void do_read(size_t bytes_transferred)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -619,7 +594,7 @@ private:
   /// Do on_write in work_service thread.
   void do_write(size_t bytes_transferred)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -631,7 +606,7 @@ private:
   template<typename Parent_Handler>
   void set_parent(Parent_Handler& handler)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -643,7 +618,7 @@ private:
   template<typename Child_Handler>
   void set_child(Child_Handler& handler)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -652,9 +627,9 @@ private:
   }
 
   /// Do on_parent in work_service thread.
-  void do_parent(const bas::event event)
+  void do_parent(const event_t event)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -663,9 +638,9 @@ private:
   }
 
   /// Do on_child in work_service thread.
-  void do_child(const bas::event event)
+  void do_child(const event_t event)
   {
-    // The handler has been stopped, do nothing.
+    // The handler is stopped, do nothing.
     if (stopped_)
       return;
 
@@ -674,17 +649,16 @@ private:
   }
 
   /// Do on_close and reset handler for next connaction in work_service thread.
-  void do_close(const boost::system::error_code& e)
+  void do_close(const boost::system::error_code& ec)
   {
     // Call on_close function of the work handler.
-    work_handler_->on_close(*this, e);
+    work_handler_->on_close(*this, ec);
 
     // Destroy all timer.
     session_timer_.reset();
     io_timer_.reset();
 
-    // Leave socket to for finishing uncompleted SSL operations.
-    // Leave io_service_/work_service_ for finishing uncompleted operations.
+    // Leave socket/io_service_/work_service_ for finishing uncompleted operations.
   }
 
 private:
@@ -704,19 +678,19 @@ private:
   /// The expiry seconds of session.
   unsigned int session_timeout_;
 
-  /// Timer for io operation timeout.
+  /// Timer for i/o operation timeout.
   timer_ptr io_timer_;
 
-  /// The expiry seconds of io operation.
+  /// The expiry seconds of i/o operation.
   unsigned int io_timeout_;
 
-  /// The io_service for for asynchronous operations.
+  /// The io_service object for executing asynchronous operations.
   io_service_t* io_service_;
 
-  /// The io_service for for executing synchronous works.
+  /// The io_service object for executing synchronous works.
   io_service_t* work_service_;
 
-  // Flag to indicate that the handler has been stopped and can not do synchronous operations.
+  /// Flag to indicate the handler is stopped or not.
   bool stopped_;
 
   /// Buffer for incoming data.

@@ -190,8 +190,8 @@ private:
 
     closed_ = true;
 
-    for (size_t i = 0; i < service_handlers_.size(); ++i)
-      service_handlers_[i].reset();
+    for (size_t i = service_handlers_.size(); i > 0; --i)
+      service_handlers_[i - 1].reset();
 
     service_handlers_.clear();
   }
@@ -200,10 +200,10 @@ private:
   service_handler_t* make_handler(void)
   {
     return new service_handler_t(work_allocator().make_handler(),
-        read_buffer_size_,
-        write_buffer_size_,
-        session_timeout_,
-        io_timeout_);
+                                 read_buffer_size_,
+                                 write_buffer_size_,
+                                 session_timeout_,
+                                 io_timeout_);
   }
 
   /// Push a handler into the pool.
@@ -221,9 +221,9 @@ private:
     }
 
     service_handler_ptr service_handler(handler_ptr,
-          bind(&service_handler_pool::put_handler,
-              shared_from_this(),
-              _1));
+                                        bind(&service_handler_pool::put_handler,
+                                             shared_from_this(),
+                                             _1));
 
     service_handlers_.push_back(service_handler);
 
@@ -253,7 +253,7 @@ private:
       if (service_handlers_.size() <= pool_low_watermark_ && handler_count_ < pool_maximum_)
         create_handler(pool_increment_);
 
-      if (service_handlers_.size() > 0)
+      if (!service_handlers_.empty())
       {
         service_handler = service_handlers_.back();
         service_handlers_.pop_back();
