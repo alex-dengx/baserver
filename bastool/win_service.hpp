@@ -179,6 +179,46 @@ public:
     return ret;
   }
 
+  static DWORD command(const std::string& service_name, unsigned int controls)
+  {
+    SERVICE_STATUS_PROCESS ssp;
+    SC_HANDLE manager_handle;
+    SC_HANDLE service_handle;
+    DWORD ret = 0;
+
+    // Get a handle to the SCM database, use ANSI version.
+    manager_handle = ::OpenSCManager(NULL,                    // local computer
+                                     NULL,                    // ServicesActive database
+                                     SC_MANAGER_ALL_ACCESS);  // full access rights
+ 
+    if (manager_handle == NULL)
+      return ::GetLastError();
+  
+    // Get a handle to the service, use ANSI version.
+    service_handle = ::OpenServiceA(manager_handle,                 // SCM database
+                                    service_name.c_str(),           // name of service
+                                    SERVICE_USER_DEFINED_CONTROL);  // need to specify a user-defined control code
+ 
+    if (service_handle == NULL)
+    {
+      ret = ::GetLastError();
+      ::CloseServiceHandle(manager_handle);
+
+      return ret;
+    }
+
+    // Send a custom code to the service.
+    if (!::ControlService(service_handle,
+                          (DWORD)controls,
+                          (LPSERVICE_STATUS)&ssp))
+       ret = ::GetLastError();
+
+    ::CloseServiceHandle(service_handle); 
+    ::CloseServiceHandle(manager_handle);
+
+    return ret;
+  }
+
   /// Set the type of service property value.
   ///   Can be one of the following values.
   ///     SERVICE_FILE_SYSTEM_DRIVER   The service is a file system driver.
