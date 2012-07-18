@@ -46,9 +46,12 @@ public:
   byte_string(size_t length, const byte_t* data)
     : buffer_(length, 0)
   {
-    BOOST_ASSERT(data != 0);
+    if (length != 0)
+    {
+      BOOST_ASSERT(data != 0);
 
-    memcpy(&buffer_[0], data, length);
+      memcpy(&buffer_[0], data, length);
+    }
   }
 
   /// Constructor to filling with the specified byte.
@@ -123,10 +126,13 @@ public:
   /// Assign the buffer with the specified data.
   byte_string& assign(size_t length, const byte_t* data)
   {
-    BOOST_ASSERT(data != 0);
-
     buffer_.resize(length);
-    memcpy(&buffer_[0], data, length);
+    if (length != 0)
+    {
+      BOOST_ASSERT(data != 0);
+
+      memcpy(&buffer_[0], data, length);
+    }
 
     return *this;
   }
@@ -169,11 +175,14 @@ public:
   /// Append the buffer with the specified data.
   byte_string& append(size_t length, const byte_t* data)
   {
-    BOOST_ASSERT(data != 0);
+    if (length != 0)
+    {
+      BOOST_ASSERT(data != 0);
 
-    size_t old_size = buffer_.size();
-    buffer_.resize(old_size + length);
-    memcpy(&buffer_[0] + old_size, data, length);
+      size_t old_size = buffer_.size();
+      buffer_.resize(old_size + length);
+      memcpy(&buffer_[0] + old_size, data, length);
+    }
 
     return *this;
   }
